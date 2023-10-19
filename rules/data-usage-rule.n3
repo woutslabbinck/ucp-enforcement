@@ -1,0 +1,21 @@
+@prefix odrl: <http://www.w3.org/ns/odrl/2/> .
+@prefix : <http://example.org/> .
+@prefix acl: <http://www.w3.org/ns/auth/acl#>.
+
+# TODO: needs to generate a policy
+{ 
+  	?permission a odrl:Permission;
+      	odrl:action odrl:use ; #list in?
+      	odrl:target ?targetResource ;
+      	odrl:assignee ?requestedParty;
+      	odrl:assigner ?resourceOwner .   
+  
+  	?context 
+    	  :resourceOwner ?resourceOwner;
+      	:requestingParty ?requestedParty;
+      	:target ?targetResource;
+      	:requestPermission acl:Read.
+} =>
+{
+   :response :accessModes acl:Read.
+}.

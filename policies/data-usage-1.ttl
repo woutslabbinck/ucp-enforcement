@@ -1,0 +1,16 @@
+@prefix odrl: <http://www.w3.org/ns/odrl/2/> .
+@prefix : <http://example.org/> .
+@prefix acl: <http://www.w3.org/ns/auth/acl#>.
+
+# TODO: needs proper identifiers?
+
+:usagePolicy 
+  a odrl:Agreement ;
+  odrl:permission :permission.
+
+:permission
+  a odrl:Permission ;
+  odrl:action odrl:use ;
+  odrl:target <http://localhost:3000/test.ttl> ;
+  odrl:assignee <https://woslabbi.pod.knows.idlab.ugent.be/profile/card#me> ;
+  odrl:assigner <http://localhost:3000/alice/profile/card#me> .
