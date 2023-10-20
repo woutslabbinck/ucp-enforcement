@@ -43,7 +43,9 @@ export class SpecialExecutor {
      */
     async executePolicies(store: Store): Promise<IPolicyExecution[]> {
         const policies = await extractPolicies(store, "none", {}, getLogger());
+
         const executions: IPolicyExecution[] = []
+        
         for (const policy of Object.values(policies)) {
             const implementation = this.plugins[policy.target]
             const policyStore = extractGraph(store, policy.node)

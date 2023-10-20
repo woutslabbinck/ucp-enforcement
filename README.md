@@ -11,3 +11,7 @@ create a list of tuples of (odrl rule id, context:Quad[], set<AccessModes>) as o
 ```sh
 npx ts-node main.ts
 ```
+
+## Info
+
+Data usage (policy 1) plugin: `http://example.org/dataUsage`

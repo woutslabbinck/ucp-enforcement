@@ -34,27 +34,31 @@ export class UcpPatternEnforcement {
         reasoningInputStore.addQuads(contextStore.getQuads(null, null, null, null))
 
         // TODO: remove in production
-        console.log("input:");
-        
-        console.log(await rdfTransformStore(reasoningInputStore, 'text/turtle'));
+        // console.log("input:");
+        // console.log(await rdfTransformStore(reasoningInputStore, 'text/turtle'));
         
         // Reason
         const reasoningResult = await this.reasoner.reason(reasoningInputStore, this.odrlRules);
 
-        console.log("reasoning output:");
+        // TODO: remove in production
+        // console.log("reasoning output:");
+        // console.log(await rdfTransformStore(reasoningResult, 'text/turtle'));
 
-        console.log(await rdfTransformStore(reasoningResult, 'text/turtle'));
-
-        // extract policies
-        const executePolicies = await this.executor.executePolicies(reasoningResult)
+        // extract and execute policies
+        const accessModes : AccessMode[] = []
+        const executedPolicies = await this.executor.executePolicies(reasoningResult)
         // if no policies -> ask owner for request -> plugin?
-        if (executePolicies.length === 0) {
+        if (executedPolicies.length === 0) {
             // no access
             // TODO: ask owner access
             // TODO: let user know
+            console.log("no policies");
+            
         }
         // if policies -> executePolicy: return value accessmodes in an object somehow?
-
-        return []
+        for (const executedPolicy of executedPolicies) {
+            accessModes.push(...executedPolicy.result)
+        }
+        return accessModes
     }
 }

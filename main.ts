@@ -6,7 +6,7 @@ import { AccessMode } from "./src/UMAinterfaces";
 import { Store } from "n3";
 
 async function main() {
-    const plugins = { "plugin": new UcpPlugin() }
+    const plugins = { "http://example.org/dataUsage": new UcpPlugin() }
     const specialExecutor = new SpecialExecutor(plugins)
 
     // TODO: proper loading -> also create proper koreografeye function
@@ -32,8 +32,6 @@ async function main() {
             }
         })
     console.log(accessModes);
-
-
 
 }
 main()

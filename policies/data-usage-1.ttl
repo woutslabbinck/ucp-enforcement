@@ -2,7 +2,7 @@
 @prefix : <http://example.org/> .
 @prefix acl: <http://www.w3.org/ns/auth/acl#>.
 
-# TODO: needs proper identifiers?
+# TODO: needs proper identifiers? -> yes in production as they will all be combined
 
 :usagePolicy 
   a odrl:Agreement ;

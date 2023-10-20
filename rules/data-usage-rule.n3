@@ -1,7 +1,9 @@
 @prefix odrl: <http://www.w3.org/ns/odrl/2/> .
 @prefix : <http://example.org/> .
 @prefix acl: <http://www.w3.org/ns/auth/acl#>.
-
+@prefix fno:  <https://w3id.org/function/ontology#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix string: <http://www.w3.org/2000/10/swap/string#> .
 # TODO: needs to generate a policy
 { 
   	?permission a odrl:Permission;
@@ -11,11 +13,17 @@
       	odrl:assigner ?resourceOwner .   
   
   	?context 
-    	  :resourceOwner ?resourceOwner;
+        :resourceOwner ?resourceOwner;
       	:requestingParty ?requestedParty;
       	:target ?targetResource;
       	:requestPermission acl:Read.
+
+    :uuid5 log:uuid ?uuidStringdataUsagePolicyExecution.
+    ( "urn:uuid:" ?uuidStringdataUsagePolicyExecution) string:concatenation ?urnUuidStringdataUsagePolicyExecution.
+    ?dataUsagePolicyExecution log:uri ?urnUuidStringdataUsagePolicyExecution .
 } =>
 {
-   :response :accessModes acl:Read.
+    ?dataUsagePolicyExecution a fno:Execution;
+        fno:executes <http://example.org/dataUsage> ; 
+        :accessModesAllowed acl:Read.
 }.
