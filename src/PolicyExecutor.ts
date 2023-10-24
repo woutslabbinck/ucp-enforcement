@@ -30,22 +30,32 @@ export type IPolicyExecution = {
     result: any
 };
 
-export class SpecialExecutor {
+export interface IPolicyExecutor {
 
-    constructor(private plugins: { [n: string]: PolicyPlugin }) {
+    /**
+     * Extracts policies out of the graph based on the {@link https://fno.io/spec/#fn-execution | `fno:Execution`} and {@link https://fno.io/spec/#fn-executes | `fno:executes` } triples.
+     * When they are extracted, the Koreografeye Plugins are executed.
+     * 
+     * Note that the graph must contain both the input given to the reasoner (minus the N3 rules) and the conclusions.
+     * @param store 
+     */
+    executePolicies(store: Store): Promise<IPolicyExecution[]>
+}
+
+export class PolicyExecutor implements IPolicyExecutor {
+    private logger: Logger;
+
+    constructor(private plugins: { [n: string]: PolicyPlugin }, logger?: Logger) {
+        this.logger = logger ?? getLogger()
 
     }
 
-    /**
-     * Can execute policies that do have some kind of result
-     * @param store reasoning result
-     * @returns 
-     */
     async executePolicies(store: Store): Promise<IPolicyExecution[]> {
-        const policies = await extractPolicies(store, "none", {}, getLogger());
+        // this method  is a rewrite without ordering of https://github.com/eyereasoner/Koreografeye/blob/3c47764951f20360125a36536c17c7bf28560c98/src/policy/Executor.ts#L39-L86
+        const policies = await extractPolicies(store, "none", {}, this.logger);
 
         const executions: IPolicyExecution[] = []
-        
+
         for (const policy of Object.values(policies)) {
             const implementation = this.plugins[policy.target]
             const policyStore = extractGraph(store, policy.node)

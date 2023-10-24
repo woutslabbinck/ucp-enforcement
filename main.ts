@@ -1,26 +1,31 @@
 import { EyeJsReasoner, parseAsN3Store, readText } from "koreografeye";
-import { SpecialExecutor } from "./src/SpecialExecutor";
+import { PolicyExecutor } from "./src/PolicyExecutor";
 import { UcpPlugin } from "./src/UCPPlugin";
 import { UcpPatternEnforcement } from "./src/UcpPatternEnforcement";
 import { AccessMode } from "./src/UMAinterfaces";
 import { Store } from "n3";
 
 async function main() {
+    // load plugin
     const plugins = { "http://example.org/dataUsage": new UcpPlugin() }
-    const specialExecutor = new SpecialExecutor(plugins)
+    // instantiate koreografeye policy executor
+    const policyExecutor = new PolicyExecutor(plugins)
 
-    // TODO: proper loading -> also create proper koreografeye function
-    const odrlPolicies = await parseAsN3Store('./policies/data-usage-1.ttl') 
-    const odrlRules: string[] = [readText('./rules/data-usage-rule.n3')!] 
+    // load ODRL Rules from a directory | TODO: utils are needed
+    const odrlRules = await parseAsN3Store('./policies/data-usage-1.ttl') 
 
+    // load N3 Rules from a directory | TODO: utils are needed
+    const n3Rules: string[] = [readText('./rules/data-usage-rule.n3')!] 
 
-    const ucpPatternEnforcment = new UcpPatternEnforcement(odrlPolicies, odrlRules, new EyeJsReasoner([
+    // instantiate the enforcer using the policy executor,
+    const ucpPatternEnforcement = new UcpPatternEnforcement(odrlRules, n3Rules, new EyeJsReasoner([
         "--quiet",
         "--nope",
-        "--pass"]), specialExecutor)
+        "--pass"]), policyExecutor)
 
-
-    const accessModes = await ucpPatternEnforcment.calculateAccessModes(
+    
+    // calculate access modes, which can be used in https://github.com/woutslabbinck/uma
+    const accessModes = await ucpPatternEnforcement.calculateAccessModes(
         {
             client: {
                 webId: "https://woslabbi.pod.knows.idlab.ugent.be/profile/card#me"

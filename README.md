@@ -1,10 +1,15 @@
 # Ucp pattern
 
-Fix TODOs, make some actual reasoning that results into acces mode with
-a working plugin.
-Where that output results into access modes?
+A playground environment to calculate Access Modes based on ODRL Rules, an [UMA Client Request](https://docs.kantarainitiative.org/uma/wg/rec-oauth-uma-grant-2.0.html#rfc.section.3.3.1) and Koreografeye (with accompanying N3 Rules and plugin(s)).
+This class will be used in the [UMA Authorisation Server](https://github.com/woutslabbinck/uma/packages/uma) that is being developed to work with the [Community Solid Server](https://github.com/CommunitySolidServer/CommunitySolidServer).
 
-create a list of tuples of (odrl rule id, context:Quad[], set<AccessModes>) as output and print it (after #l49: executepolicies)
+The UMA client request contains the following information
+* Resource Owner
+* Resource (the target resource)
+* Requesting Party
+* Requested Access Mode (decided by the Resource Server)
+
+In [`main.ts`](./main.ts) is an example of how it works given.
 
 ## run
 
@@ -15,3 +20,11 @@ npx ts-node main.ts
 ## Info
 
 Data usage (policy 1) plugin: `http://example.org/dataUsage`
+
+## TODOs
+
+* handle prohibition
+* send notification to the owner that a request has been asked
+  * maybe that should be handled in the Authorizer in the [UMA Authorisation Server](https://github.com/woutslabbinck/uma/packages/uma)
+* think about how to handle that a user has to wait for the owner
+  * Maybe this is default in the [UMA Authorisation Server](https://github.com/woutslabbinck/uma/packages/uma) when no access modes are returned
