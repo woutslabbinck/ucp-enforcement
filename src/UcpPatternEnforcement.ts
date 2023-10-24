@@ -11,7 +11,7 @@ const { quad, namedNode } = DataFactory
 export class UcpPatternEnforcement {
 
 
-    constructor(private odrlPolicies: Store, private koreografeyeOdrlRules: string[], private reasoner: Reasoner, private executor: IPolicyExecutor) {
+    constructor(private odrlRules: Store, private koreografeyeOdrlRules: string[], private reasoner: Reasoner, private executor: IPolicyExecutor) {
 
     }
 
@@ -39,7 +39,7 @@ export class UcpPatternEnforcement {
         const contextStore = createContext({owner, resource, requestingParty, requestedAccessModes})
 
         const reasoningInputStore = new Store()
-        reasoningInputStore.addQuads(this.odrlPolicies.getQuads(null, null, null, null))
+        reasoningInputStore.addQuads(this.odrlRules.getQuads(null, null, null, null))
         reasoningInputStore.addQuads(contextStore.getQuads(null, null, null, null))
 
         // TODO: remove in production
