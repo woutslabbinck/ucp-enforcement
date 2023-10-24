@@ -28,3 +28,7 @@ Data usage (policy 1) plugin: `http://example.org/dataUsage`
   * maybe that should be handled in the Authorizer in the [UMA Authorisation Server](https://github.com/woutslabbinck/uma/packages/uma)
 * think about how to handle that a user has to wait for the owner
   * Maybe this is default in the [UMA Authorisation Server](https://github.com/woutslabbinck/uma/packages/uma) when no access modes are returned
+* Define proper UCP plugin and use proper model for the uma context generated
+  * that way proper N3 Rules for koreografeye can be written
+* Code cleanups
+* (optional) add a store to UcpPatternEnforcement to which other services could add extra ODRL Rules (would allow real use cases where an owner adds an ODRL Rule)
