@@ -1,8 +1,11 @@
 {
-  "devDependencies": {
+  "dependencies": {
     "@types/n3": "^1.16.3",
     "koreografeye": "^0.4.6",
-    "n3": "^1.17.1",
-    "ts-node": "^10.9.1"
+    "n3": "^1.17.1"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.1",
+    "@solid/community-server": "7.0.3"
   }
 }

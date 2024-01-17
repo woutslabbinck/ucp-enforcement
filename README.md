@@ -52,3 +52,11 @@ This needs to be the end goal of a UMA Solid Demo with following reqs:
 * RO can add ODRL Rules to the AS
 
 extra reqs (as can be seen in figure): use LDN inbox for the messages.
+
+1. make UCON_Inst_Rules a **READ ONLY** store that can be updated externally (assumption: when consulted at time t, will be consistent)
+   1. Option 1: Based on file system (easy testing)
+   2. Option 2: Based on a ldp:container (allows for a resource owner to later add new policies)
+```typescript
+async getStore: Promise<Store>
+```
+2. Replace current (working) code to have those two kinds of storages
