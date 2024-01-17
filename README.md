@@ -46,6 +46,13 @@ console.log(accessModes);
 ```sh
 > [ 'read' ]
 ```
+
+### Next steps
+
+* create architecture drawing of what it currently is capable of
+* Integrate with [UMA server](https://github.com/SolidLabResearch/user-managed-access/)
+  * Discuss with others
+
 ## TODOs
 
 * handle prohibition
@@ -77,3 +84,4 @@ This needs to be the end goal of a UMA Solid Demo with following reqs:
 * RO can add ODRL Rules to the AS
 
 extra reqs (as can be seen in figure): use LDN inbox for the messages.
+
