@@ -2,6 +2,7 @@ import { Store, DataFactory } from "n3";
 import { Reasoner, rdfTransformStore, rdfTransformString } from "koreografeye"
 import { PolicyExecutor as IPolicyExecutor } from "./PolicyExecutor";
 import { Principal, Ticket, AccessMode } from "./UMAinterfaces";
+import { UCRulesStorage } from "./storage/UCRulesStorage";
 const { quad, namedNode } = DataFactory
 
 /**
@@ -11,7 +12,7 @@ const { quad, namedNode } = DataFactory
 export class UcpPatternEnforcement {
 
 
-    constructor(private odrlRules: Store, private koreografeyeOdrlRules: string[], private reasoner: Reasoner, private executor: IPolicyExecutor) {
+    constructor(private uconRulesStorage: UCRulesStorage, private koreografeyeOdrlRules: string[], private reasoner: Reasoner, private executor: IPolicyExecutor) {
 
     }
 
@@ -39,7 +40,8 @@ export class UcpPatternEnforcement {
         const contextStore = createContext({owner, resource, requestingParty, requestedAccessModes})
 
         const reasoningInputStore = new Store()
-        reasoningInputStore.addQuads(this.odrlRules.getQuads(null, null, null, null))
+
+        reasoningInputStore.addQuads((await this.uconRulesStorage.getStore()).getQuads(null, null, null, null))
         reasoningInputStore.addQuads(contextStore.getQuads(null, null, null, null))
 
         // TODO: remove in production

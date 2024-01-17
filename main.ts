@@ -1,6 +1,6 @@
 import { EyeJsReasoner, parseAsN3Store, readText } from "koreografeye";
 import { PolicyExecutor } from "./src/PolicyExecutor";
-import { UcpPlugin } from "./src/UCPPlugin";
+import { UcpPlugin } from "./src/plugins/UCPPlugin";
 import { UcpPatternEnforcement } from "./src/UcpPatternEnforcement";
 import { AccessMode } from "./src/UMAinterfaces";
 import { Store } from "n3";
@@ -14,14 +14,14 @@ async function main() {
     // instantiate koreografeye policy executor
     const policyExecutor = new PolicyExecutor(plugins)
 
-    // load ODRL Rules from a directory | TODO: utils are needed
-    const odrlRules = await parseAsN3Store('./policies/data-usage-1.ttl')
+    // load UCON (ODRL) Rules from a directory 
+    const uconRulesStorage = new DirectoryUCRulesStorage(path.join(__dirname, "policies"))
 
     // load N3 Rules from a directory | TODO: utils are needed
     const n3Rules: string[] = [readText('./rules/data-usage-rule.n3')!]
 
     // instantiate the enforcer using the policy executor,
-    const ucpPatternEnforcement = new UcpPatternEnforcement(odrlRules, n3Rules, new EyeJsReasoner([
+    const ucpPatternEnforcement = new UcpPatternEnforcement(uconRulesStorage, n3Rules, new EyeJsReasoner([
         "--quiet",
         "--nope",
         "--pass"]), policyExecutor)
@@ -42,7 +42,7 @@ async function main() {
     console.log(accessModes);
 
 }
-// main()
+main()
 
 async function dynamicStores() {
     // directory policy store
@@ -81,7 +81,7 @@ async function dynamicStores() {
     await server.stop()
     
 }
-dynamicStores()
+// dynamicStores()
 
 import { App, AppRunner, AppRunnerInput } from "@solid/community-server"
 import { ContainerUCRulesStore as ContainerUCRulesStorage } from "./src/storage/ContainerUCRulesStorage";

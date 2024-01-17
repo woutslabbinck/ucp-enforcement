@@ -1,10 +1,10 @@
-import { UCRulesStore } from "./UCRulesStore";
+import { UCRulesStorage } from "./UCRulesStorage";
 import * as path from 'path'
 import * as fs from 'fs'
 import { Store } from "n3";
 import { parseAsN3Store } from "koreografeye";
 
-export class DirectoryUCRulesStorage implements UCRulesStore {
+export class DirectoryUCRulesStorage implements UCRulesStorage {
     private directoryPath: string;
     /**
      * 

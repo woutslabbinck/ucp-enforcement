@@ -1,9 +1,9 @@
 import { Store } from "n3";
-import { UCRulesStore } from "./UCRulesStore";
+import { UCRulesStorage } from "./UCRulesStorage";
 import { turtleStringToStore } from "../util/Conversion";
 
 type RequestInfo = string | Request;
-export class ContainerUCRulesStore implements UCRulesStore {
+export class ContainerUCRulesStore implements UCRulesStorage {
     private containerURL: string;
     private fetch: (input: RequestInfo, init?: RequestInit | undefined) => Promise<Response>;
     /**
@@ -21,8 +21,14 @@ export class ContainerUCRulesStore implements UCRulesStore {
         const container = await readLdpRDFResource(this.fetch, this.containerURL);
         const children = container.getObjects(this.containerURL, "http://www.w3.org/ns/ldp#contains", null).map(value => value.value)
         for (const childURL of children) {
-            const childStore = await readLdpRDFResource(this.fetch, childURL);
-            store.addQuads(childStore.getQuads(null, null, null, null))
+            try {
+                const childStore = await readLdpRDFResource(this.fetch, childURL);
+                store.addQuads(childStore.getQuads(null, null, null, null))
+            } catch (e) {
+                console.log(`${childURL} is not an RDF resource`);
+                
+            }
+
         }
         return store;
     }

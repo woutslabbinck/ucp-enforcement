@@ -1,5 +1,5 @@
 import { Store } from "n3";
 
-export interface UCRulesStore {
+export interface UCRulesStorage {
     getStore:() => Promise<Store>
 }

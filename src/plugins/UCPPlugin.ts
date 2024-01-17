@@ -1,8 +1,8 @@
 import { Store } from "n3";
-import { IPolicyType, PolicyPlugin } from "./PolicyExecutor";
-import { AccessMode } from "./UMAinterfaces";
+import { IPolicyType, PolicyPlugin } from "../PolicyExecutor";
+import { AccessMode } from "../UMAinterfaces";
 import { rdfTransformStore } from "koreografeye";
-import { accesModesAllowed } from "./util/constants";
+import { accesModesAllowed } from "../util/constants";
 
 export const ucpPluginIdentifier = 'http://example.org/dataUsage'
 
