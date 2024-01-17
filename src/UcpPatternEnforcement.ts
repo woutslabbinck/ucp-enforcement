@@ -9,7 +9,7 @@ const { quad, namedNode } = DataFactory
  * Can calculate Access Modes based on an UMA request, ODRL Rules and N3 Rules using the Koreografeye flow.
  * Currently, prohibitions are not taken into account.
  */
-export class UcpPatternEnforcement {
+export class UcpPatternEnforcement implements UconEnforcementDecision{
 
 
     constructor(private uconRulesStorage: UCRulesStorage, private koreografeyeOdrlRules: string[], private reasoner: Reasoner, private executor: IPolicyExecutor) {
@@ -28,16 +28,9 @@ export class UcpPatternEnforcement {
      * @param context Context about the client and the request, parsed by an UMA Server.
      * @returns 
      */
-    async calculateAccessModes(context: { client: Principal; request: Ticket; }): Promise<AccessMode[]> {
+    async calculateAccessModes(request: UconRequest): Promise<AccessMode[]> {
         // go from context to an RDF graph that contains all context
-        const { client, request } = context
-
-        const owner = request.owner
-        const resource = request.sub.iri
-        const requestingParty = client.webId
-        const requestedAccessModes = Array.from(request.requested)
-
-        const contextStore = createContext({owner, resource, requestingParty, requestedAccessModes})
+        const contextStore = createContext(request)
 
         const reasoningInputStore = new Store()
 
@@ -79,12 +72,12 @@ export class UcpPatternEnforcement {
  * Currently, the access request also contain ACL access modes.
  * @param context 
  */
-function createContext(context: { owner: string, requestingParty: string, resource: string, requestedAccessModes: AccessMode[] }): Store {
+function createContext(request: UconRequest): Store {
     const contextStore = new Store()
-    const { owner, requestingParty, requestedAccessModes, resource } = context
+    const { owner, subject:requestingParty, action: requestedAccessModes, resource } = request
     const contextIRI = 'http://example.org/context'
     contextStore.addQuads([
-        quad(namedNode(contextIRI), namedNode('http://example.org/resourceOwner'), namedNode(owner)),
+        quad(namedNode(contextIRI), namedNode('http://example.org/resourceOwner'), namedNode(owner!)), // will probably fail if owner is not passed
         quad(namedNode(contextIRI), namedNode('http://example.org/requestingParty'), namedNode(requestingParty)),
         quad(namedNode(contextIRI), namedNode('http://example.org/target'), namedNode(resource))
     ])
@@ -93,4 +86,30 @@ function createContext(context: { owner: string, requestingParty: string, resour
         contextStore.addQuad(namedNode(contextIRI), namedNode('http://example.org/requestPermission'), namedNode(accessMode))
     }
     return contextStore
+}
+
+
+export interface UconEnforcementDecision {
+    /**
+     * Calculates the modes granted (i.e. the `actions`) based on the request and the configured Usage Control Rules and how they are interpreted.
+     * 
+     * @param request A parsed Usage Request containing `who` wants to perform `which action` on a given `resource` with a given `context`. 
+     * @returns A list of Access Modes
+     */
+    calculateAccessModes: (request: UconRequest) => Promise<AccessMode[]>;
+}
+/**
+ * 
+ * @property {string} subject - The identifier of the entity that wants to execute an action on a resource (e.g. a {@link https://solid.github.io/webid-profile/ WebID})
+ * @property {string} action - The type of action(s) that the entity wants to perform on the resource (e.g. a CRUD action)
+ * @property {string} resource - The resource identifier that is governed by a usage control policy 
+ * @property {string} context - Extra information supplied (can be the purpose of use, extra claims, ...) | Note: currently not implemented yet
+ * @property {string} owner - The owner/providerof the resource (e.g. a {@link https://solid.github.io/webid-profile/ WebID})
+ */
+export interface UconRequest {
+    subject: string;
+    action: string[];
+    resource: string;
+    context?: string;
+    owner?: string
 }

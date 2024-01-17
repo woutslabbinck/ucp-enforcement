@@ -4,6 +4,7 @@
 
 # TODO: needs proper identifiers? -> yes in production as they will all be combined
 
+# usage policy
 :usagePolicy 
   a odrl:Agreement ;
   odrl:permission :permission.

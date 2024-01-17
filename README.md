@@ -21,6 +21,31 @@ npx ts-node main.ts
 
 Data usage (policy 1) plugin: `http://example.org/dataUsage`
 
+## How does it work
+
+There are a couple of components:
+* Usage Control Rules storage: A storage containing instantiated concrete policies
+* N3 Rules storage: A storage containing a set of N3 rules where each such rule matches a concrete type of UCP to the context. 
+The result of which are a set of instructions for a **Koreografeye Plugin** .
+* A Plugin storage: A storage containing a set Koreografeye Plugins. (note, they are a bit different than the koreografeye policies as they can return `any` instead of just `boolean`)
+* An N3 Reasoner
+* A Plugin Executor
+* A UCP decision component: Which currently uses all of the above to **reason** over which **access modes** (actions) are granted based on a request.
+
+This means that in an Authorization Server, this component could be used as a decision component.
+```typescript
+const ucpDecide: UconEnforcementDecision = ...
+const accessModes = await ucpDecide.calculateAccessModes({
+    subject: "https://woslabbi.pod.knows.idlab.ugent.be/profile/card#me",
+    action: ["http://www.w3.org/ns/auth/acl#Read"],
+    resource: "http://localhost:3000/test.ttl",
+    owner: "http://localhost:3000/alice/profile/card#me"
+});
+console.log(accessModes);
+```
+```sh
+> [ 'read' ]
+```
 ## TODOs
 
 * handle prohibition
@@ -52,11 +77,3 @@ This needs to be the end goal of a UMA Solid Demo with following reqs:
 * RO can add ODRL Rules to the AS
 
 extra reqs (as can be seen in figure): use LDN inbox for the messages.
-
-1. make UCON_Inst_Rules a **READ ONLY** store that can be updated externally (assumption: when consulted at time t, will be consistent)
-   1. Option 1: Based on file system (easy testing)
-   2. Option 2: Based on a ldp:container (allows for a resource owner to later add new policies)
-```typescript
-async getStore: Promise<Store>
-```
-2. Replace current (working) code to have those two kinds of storages

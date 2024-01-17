@@ -4,14 +4,16 @@
 @prefix fno:  <https://w3id.org/function/ontology#> .
 @prefix log: <http://www.w3.org/2000/10/swap/log#> .
 @prefix string: <http://www.w3.org/2000/10/swap/string#> .
-# TODO: needs to generate a policy
+# If the context of a request matches an ODRL Permission rule then read access is granted.
+# Note: constraints are not checked -> as a result if there are policies with constraint in the ucon rule set, access will be granted without checking them
 { 
   	?permission a odrl:Permission;
       	odrl:action odrl:use ; #list in?
       	odrl:target ?targetResource ;
       	odrl:assignee ?requestedParty;
       	odrl:assigner ?resourceOwner .   
-  
+		
+   # context of a request
   	?context 
         :resourceOwner ?resourceOwner;
       	:requestingParty ?requestedParty;

@@ -1,7 +1,7 @@
 import { EyeJsReasoner, parseAsN3Store, readText } from "koreografeye";
 import { PolicyExecutor } from "./src/PolicyExecutor";
 import { UcpPlugin } from "./src/plugins/UCPPlugin";
-import { UcpPatternEnforcement } from "./src/UcpPatternEnforcement";
+import { UconRequest, UcpPatternEnforcement } from "./src/UcpPatternEnforcement";
 import { AccessMode } from "./src/UMAinterfaces";
 import { Store } from "n3";
 import * as path from 'path'
@@ -26,19 +26,16 @@ async function main() {
         "--nope",
         "--pass"]), policyExecutor)
 
+    const request: UconRequest = {
+        subject: "https://woslabbi.pod.knows.idlab.ugent.be/profile/card#me",
+        action: [AccessMode.read],
+        resource: "http://localhost:3000/test.ttl",
+        owner: "http://localhost:3000/alice/profile/card#me"
+    }
 
     // calculate access modes, which can be used in https://github.com/woutslabbinck/uma
     const accessModes = await ucpPatternEnforcement.calculateAccessModes(
-        {
-            client: {
-                webId: "https://woslabbi.pod.knows.idlab.ugent.be/profile/card#me"
-            },
-            request: {
-                sub: { iri: "http://localhost:3000/test.ttl" },
-                owner: "http://localhost:3000/alice/profile/card#me",
-                requested: new Set([AccessMode.read])
-            }
-        })
+        request)
     console.log(accessModes);
 
 }
@@ -67,7 +64,7 @@ async function dynamicStores() {
     // add ucon policies (currently fetched from `policies` directory)
     await fetch(uconRulesContainer, {
         method: "POST",
-        headers: {'content-type': 'text/turtle'},
+        headers: { 'content-type': 'text/turtle' },
         body: storeToString(directoryStore)
     }).then(res => console.log("status adding policies:", res.status))
 
@@ -76,10 +73,10 @@ async function dynamicStores() {
 
     const containerStore = await containerStorage.getStore()
     console.log(storeToString(containerStore));
-    
+
     // stop server
     await server.stop()
-    
+
 }
 // dynamicStores()
 
