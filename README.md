@@ -53,6 +53,27 @@ console.log(accessModes);
 * Integrate with [UMA server](https://github.com/SolidLabResearch/user-managed-access/)
   * Discuss with others
 
+```mermaid
+sequenceDiagram
+    actor RP as Requesting Party
+    participant RS as Resource Server
+    participant AS as Authorization Server
+    actor Owner as Owner
+
+    autonumber
+    note over RP, Owner: Assumption: RP knows about resource X, but there is no rule in the AS that grants him access.
+    RP->>RS: GET resource X
+    RS->>AS: POST resource X <br/> (Fed Authz for UMA §4.1)
+    AS-->>RS: return (HTTP 201) ticket <br/> (Fed AuthZ for UMA §4.2)
+    RS-->>RP: return (HTTP 401) Unauthorized <br/> Header: ticket + AS Server location <br/> (UMA §3.2.1)
+    
+    RP->>AS: POST ticket + grant_type + ticket<br/> (UMA §3.3.1)
+    AS->>AS: Authorizer checks whether policy exists to grant access
+    AS->>RP: return (HTTP 400) invalid scope <br/> (UMA §3.3.6)
+    
+
+```
+
 ## TODOs
 
 * handle prohibition
