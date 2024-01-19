@@ -68,11 +68,30 @@ sequenceDiagram
     RS-->>RP: return (HTTP 401) Unauthorized <br/> Header: ticket + AS Server location <br/> (UMA §3.2.1)
     
     RP->>AS: POST ticket + grant_type + ticket<br/> (UMA §3.3.1)
-    AS->>AS: Authorizer checks whether policy exists to grant access
-    AS->>RP: return (HTTP 400) invalid scope <br/> (UMA §3.3.6)
+    AS->>AS: Authorizer checks whether policy exists to grant access*
+    AS-->>RP: return (HTTP 400) invalid scope <br/> (UMA §3.3.6)
     
+    note over RP, Owner: At this point, the Owner must be made aware of the fact that there was an insuccessfull request to a given resource. <br/>(i) Can be a request from the Owner to the Authorization server to check which RP wanted access to the Resources.<br/>(ii) Can be a notification from the AS to the Owner
+	Owner ->>AS: Add UCP to grant access to RP for resource X
+    
+    RP->>RS: GET resource X
+    RS->>AS: POST resource X <br/> (Fed Authz for UMA §4.1)
+    AS-->>RS: return (HTTP 201) ticket <br/> (Fed AuthZ for UMA §4.2)
+    RS-->>RP: return (HTTP 401) Unauthorized <br/> Header: ticket + AS Server location <br/> (UMA §3.2.1)
+    
+    RP->>AS: POST ticket + grant_type + ticket<br/> (UMA §3.3.1)
+    AS->>AS: Authorizer checks whether policy exists to grant access*
+    AS-->>RP: return (HTTP 200) <br/> (UMA §3.3.5)
+    
+    RP->>RS: GET resource X (with token)
+    RS->>RS: Verify token claims**
+    RS-->>RP: return (HTTP 200) resource
 
 ```
+
+\*: The authorizer here would use an instantiation of interface `UconEnforcementDecision` to `calculateAccessModes` for the given `request` against the stored `Usage Control Rules` (and how those rules should be interpreted -> `N3 Rules`)
+
+\**: The verification of the token can include sending requests to the Authorization Server and other services. Only if they are valid, can the request be granted. 
 
 ## TODOs
 
