@@ -1,6 +1,6 @@
 import { Store } from "n3";
 import { IPolicyType, PolicyPlugin } from "../PolicyExecutor";
-import { AccessMode } from "../UMAinterfaces";
+import { AccessMode } from "../models/UMAinterfaces";
 import { rdfTransformStore } from "koreografeye";
 import { accesModesAllowed } from "../util/constants";
 

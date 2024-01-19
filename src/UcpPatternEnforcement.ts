@@ -1,7 +1,7 @@
 import { Store, DataFactory } from "n3";
 import { Reasoner, rdfTransformStore, rdfTransformString } from "koreografeye"
 import { PolicyExecutor as IPolicyExecutor } from "./PolicyExecutor";
-import { Principal, Ticket, AccessMode } from "./UMAinterfaces";
+import { Principal, Ticket, AccessMode } from "./models/UMAinterfaces";
 import { UCRulesStorage } from "./storage/UCRulesStorage";
 const { quad, namedNode } = DataFactory
 

@@ -2,7 +2,7 @@ import { EyeJsReasoner, parseAsN3Store, readText } from "koreografeye";
 import { PolicyExecutor } from "./src/PolicyExecutor";
 import { UcpPlugin } from "./src/plugins/UCPPlugin";
 import { UconRequest, UcpPatternEnforcement } from "./src/UcpPatternEnforcement";
-import { AccessMode } from "./src/UMAinterfaces";
+import { AccessMode } from "./src/models/UMAinterfaces";
 import { Store } from "n3";
 import * as path from 'path'
 import { DirectoryUCRulesStorage } from "./src/storage/DirectoryUCRulesStorage";

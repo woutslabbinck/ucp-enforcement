@@ -1,4 +1,5 @@
-// copied from UMA Laurens
+// copied from UMA Laurens 
+// works for https://github.com/woutslabbinck/uma
 export interface ResourceIdentifier {
     /**
      * Resource IRI
@@ -35,3 +36,4 @@ export interface Principal {
     clientId?: string;
 }
 // end copy laurens
+
