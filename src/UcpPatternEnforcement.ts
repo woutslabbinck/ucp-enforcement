@@ -56,8 +56,7 @@ export class UcpPatternEnforcement implements UconEnforcementDecision{
             // no access
             // TODO: ask owner access
             // TODO: let user know that there is no access
-            console.log("no policies");
-
+            console.log(`[${new Date().toISOString()}] - UcpPatternEnforcement: no policies`);
         }
         // if policies -> executePolicy: return value accessmodes in an object somehow?
         for (const executedPolicy of executedPolicies) {
