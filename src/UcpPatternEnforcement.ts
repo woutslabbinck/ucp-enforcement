@@ -28,7 +28,7 @@ export class UcpPatternEnforcement implements UconEnforcementDecision{
      * @param context Context about the client and the request, parsed by an UMA Server.
      * @returns 
      */
-    async calculateAccessModes(request: UconRequest): Promise<AccessMode[]> {
+    async calculateGrantedAccessModes(request: UconRequest): Promise<AccessMode[]> {
         // go from context to an RDF graph that contains all context
         const contextStore = createContext(request)
 
@@ -96,7 +96,7 @@ export interface UconEnforcementDecision {
      * @param request A parsed Usage Request containing `who` wants to perform `which action` on a given `resource` with a given `context`. 
      * @returns A list of Access Modes
      */
-    calculateAccessModes: (request: UconRequest) => Promise<AccessMode[]>;
+    calculateGrantedAccessModes: (request: UconRequest) => Promise<AccessMode[]>;
 }
 /**
  * 

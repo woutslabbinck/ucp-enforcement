@@ -34,7 +34,7 @@ async function main() {
     }
 
     // calculate access modes, which can be used in https://github.com/woutslabbinck/uma
-    const accessModes = await ucpPatternEnforcement.calculateAccessModes(
+    const accessModes = await ucpPatternEnforcement.calculateGrantedAccessModes(
         request)
     console.log(accessModes);
 
