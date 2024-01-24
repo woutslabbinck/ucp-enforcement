@@ -98,8 +98,6 @@ export async function purgePolicyStorage(containerURL: string): Promise<void> {
 }
 // util function that checks whether lists contain the same elements
 export function eqList(as: any[], bs: any[]): boolean {
-    console.log(as);
-    console.log(bs);
     return as.length === bs.length && as.every(a => bs.includes(a))
 }
 
