@@ -71,7 +71,7 @@ export class UcpPatternEnforcement implements UconEnforcementDecision{
  * Currently, the access request also contain ACL access modes.
  * @param context 
  */
-function createContext(request: UconRequest): Store {
+export function createContext(request: UconRequest): Store {
     const contextStore = new Store()
     const { owner, subject:requestingParty, action: requestedAccessModes, resource } = request
     const contextIRI = 'http://example.org/context'

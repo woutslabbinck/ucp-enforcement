@@ -1,6 +1,9 @@
 import { App, AppRunner, AppRunnerInput } from "@solid/community-server";
 import * as path from 'path';
 import { readLdpRDFResource } from "./src/storage/ContainerUCRulesStorage";
+import { UCRulesStorage } from "./src/storage/UCRulesStorage";
+import { Store } from "n3";
+import { storeToString } from "./src/util/Conversion";
 
 export async function configSolidServer(port: number): Promise<App> {
     const input: AppRunnerInput = {
@@ -95,5 +98,45 @@ export async function purgePolicyStorage(containerURL: string): Promise<void> {
 }
 // util function that checks whether lists contain the same elements
 export function eqList(as: any[], bs: any[]): boolean {
+    console.log(as);
+    console.log(bs);
     return as.length === bs.length && as.every(a => bs.includes(a))
+}
+
+export async function getUconRule(uconBaseIri: string, uconStorage: UCRulesStorage): Promise<Store> {
+    const uconStore = await uconStorage.getStore()
+    const ruleIRIs = uconStore.getSubjects('http://www.w3.org/1999/02/22-rdf-syntax-ns#type','http://www.w3.org/ns/odrl/2/Permission', null)
+    .filter(subject => subject.value.includes(uconBaseIri))
+
+    if (ruleIRIs.length === 0) throw Error("No rule found in the storage.")
+    if (ruleIRIs.length > 1) throw Error("Did not expect to find multiple rules.")
+
+    return extractQuadsRecursive(uconStore, ruleIRIs[0].value)
+}
+
+/**
+ * A recursive search algorithm that gives all quads that a subject can reach (working with circles)
+ * 
+ * @param store 
+ * @param subjectIRI 
+ * @param existing IRIs that already have done the recursive search (IRIs in there must not be searched for again)
+ * @returns 
+ */
+export function extractQuadsRecursive(store: Store, subjectIRI: string, existing?:string[]): Store {
+    const tempStore = new Store();
+    const subjectIRIQuads = store.getQuads(subjectIRI, null, null, null)
+
+    tempStore.addQuads(subjectIRIQuads)
+    const existingSubjects = existing ?? [subjectIRI]
+
+    for (const subjectIRIQuad of subjectIRIQuads) {
+        if (!existingSubjects.includes(subjectIRIQuad.object.id)){
+            tempStore.addQuads(extractQuadsRecursive(store, subjectIRIQuad.object.id, existingSubjects).getQuads(null, null, null, null))
+        } 
+        else {
+            tempStore.addQuad(subjectIRIQuad)
+        }
+        existingSubjects.push(subjectIRIQuad.object.id)
+    }
+    return tempStore
 }

@@ -2,10 +2,12 @@
 import { AccessMode } from "@solid/community-server";
 import { EyeJsReasoner, readText } from "koreografeye";
 import { PolicyExecutor } from "./src/PolicyExecutor";
-import { UcpPatternEnforcement } from "./src/UcpPatternEnforcement";
+import { UcpPatternEnforcement, createContext } from "./src/UcpPatternEnforcement";
 import { UcpPlugin } from "./src/plugins/UCPPlugin";
 import { ContainerUCRulesStore as ContainerUCRulesStorage } from "./src/storage/ContainerUCRulesStorage";
-import { configSolidServer, eqList, createPolicy, purgePolicyStorage, createTemporalPolicy } from "./crudUtil";
+import { configSolidServer, eqList, createPolicy, purgePolicyStorage, createTemporalPolicy, getUconRule } from "./crudUtil";
+import { storeToString } from "./src/util/Conversion";
+import * as fs from 'fs'
 
 async function main() {
     // constants
@@ -63,7 +65,7 @@ async function main() {
     if (!eqList(readNoPolicy, [])) {
         amountErrors++
         console.log("This policy is wrong.");
-        
+
     }
     console.log();
 
@@ -79,7 +81,7 @@ async function main() {
     if (!eqList(writeNoPolicy, [])) {
         amountErrors++
         console.log("This policy is wrong.");
-        
+
     }
     console.log();
 
@@ -97,7 +99,7 @@ async function main() {
     if (!eqList(readWhileWritePolicy, [])) {
         amountErrors++
         console.log("This policy is wrong.");
-        
+
     }
     console.log();
 
@@ -115,7 +117,7 @@ async function main() {
     if (!eqList(writeWhileReadPolicy, [])) {
         amountErrors++
         console.log("This policy is wrong.");
-        
+
     }
     console.log();
 
@@ -133,7 +135,7 @@ async function main() {
     if (!eqList(readWhileTemporalReadPolicy, [])) {
         amountErrors++
         console.log("This policy is wrong.");
-        
+
     }
     console.log();
 
@@ -148,15 +150,15 @@ async function main() {
     await purgePolicyStorage(uconRulesContainer);
     console.log("'read' access request while temporal 'read' policy present. Within bound.")
     console.log("Read access mode should be present:", readWhileTemporalReadPolicyWithin);
-    if (!eqList(readWhileTemporalReadPolicyWithin, [aclRead])) {
+    if (!eqList(readWhileTemporalReadPolicyWithin, [AccessMode.read])) {
         amountErrors++
         console.log("This policy is wrong.");
-        
+
     }
     console.log();
 
     // TODO: need write policies as well.
-    
+
     // ask read access while read policy present
     await createPolicy(uconRulesContainer, { action: odrlRead, owner, resource, requestingParty })
     const readPolicy = await ucpPatternEnforcement.calculateAccessModes({
@@ -171,7 +173,7 @@ async function main() {
     if (!eqList(readPolicy, [AccessMode.read])) {
         amountErrors++
         console.log("This policy is wrong.");
-        
+
     }
     console.log();
 
@@ -190,7 +192,7 @@ async function main() {
     if (!eqList(writePolicy, [AccessMode.write])) {
         amountErrors++
         console.log("This policy is wrong.");
-        
+
     }
     console.log();
 
@@ -209,7 +211,7 @@ async function main() {
     if (!eqList(usePolicy, [AccessMode.write, AccessMode.read])) {
         amountErrors++
         console.log("This policy is wrong.");
-        
+
     }
     console.log();
 
@@ -221,3 +223,87 @@ async function main() {
 }
 main()
 
+async function individual() {
+    // constants
+    const aclRead = "http://www.w3.org/ns/auth/acl#Read"
+    const aclWrite = "http://www.w3.org/ns/auth/acl#Write"
+    const odrlRead = "http://www.w3.org/ns/odrl/2/read"
+    const odrlWrite = "http://www.w3.org/ns/odrl/2/modify"
+    const odrlUse = "http://www.w3.org/ns/odrl/2/use"
+
+    const owner = "https://pod.woutslabbinck.com/profile/card#me"
+    const resource = "http://localhost:3000/test.ttl"
+    const requestingParty = "https://woslabbi.pod.knows.idlab.ugent.be/profile/card#me"
+
+    const portNumber = 3123
+    const containerURL = `http://localhost:${portNumber}/`
+
+    // start server
+    // configured as following command: $ npx @solid/community-server -p 3123 -c config/memory.json     
+    const server = await configSolidServer(portNumber)
+    await server.start()
+
+    // set up policy container
+    const uconRulesContainer = `${containerURL}ucon/`
+    await fetch(uconRulesContainer, {
+        method: "PUT"
+    }).then(res => console.log("status creating ucon container:", res.status))
+    console.log();
+
+
+    // load plugin
+    const plugins = { "http://example.org/dataUsage": new UcpPlugin() }
+    // instantiate koreografeye policy executor
+    const policyExecutor = new PolicyExecutor(plugins)
+    // ucon storage
+    const uconRulesStorage = new ContainerUCRulesStorage(uconRulesContainer)
+    // load N3 Rules from a directory | TODO: utils are needed
+    const n3Rules: string[] = [readText('./rules/data-crud-rules.n3')!, readText('./rules/data-crud-temporal.n3')!]
+    // instantiate the enforcer using the policy executor,
+    const ucpPatternEnforcement = new UcpPatternEnforcement(uconRulesStorage, n3Rules, new EyeJsReasoner([
+        "--quiet",
+        "--nope",
+        "--pass"]), policyExecutor)
+
+    let amountErrors = 0;
+
+    // create temporal (from - to) policy (within time)
+    const uconBaseIri = await createTemporalPolicy(uconRulesContainer, { action: odrlRead, owner, resource, requestingParty }, { from: new Date(0), to: new Date(new Date().valueOf() + 30_000) })
+    const readWhileTemporalReadPolicyWithin = await ucpPatternEnforcement.calculateAccessModes({
+        subject: requestingParty,
+        action: [aclRead],
+        resource: resource,
+        owner: owner
+    })
+    console.log("'read' access request while temporal 'read' policy present. Within bound.")
+    console.log("Read access mode should be present:", readWhileTemporalReadPolicyWithin);
+    if (!eqList(readWhileTemporalReadPolicyWithin, [AccessMode.read])) {
+        amountErrors++
+        console.log("This policy is wrong.");
+
+        // get Policy
+        const policy = storeToString(await getUconRule(uconBaseIri, uconRulesStorage))
+        // create context request
+        const context = storeToString(createContext({
+            subject: requestingParty,
+            action: [aclRead],
+            resource: resource,
+            owner: owner
+        }))
+        // create file with N3 rules, context and policy
+        const fileName = `fullRequest-${new Date().valueOf()}.n3`
+        const fileContent = [policy, context, ...n3Rules].join('\n')
+        console.log('execute with eye:', `\neye --quiet --nope --pass-only-new ${fileName}`);
+        
+        fs.writeFileSync(fileName, fileContent)
+
+    }
+    console.log();
+    await purgePolicyStorage(uconRulesContainer);
+
+    // stop server
+    await server.stop()
+
+    if (amountErrors) console.log("Amount of errors:", amountErrors); // only log amount of errors if there are any
+}
+// individual()
