@@ -1,13 +1,12 @@
 
 import { AccessMode } from "@solid/community-server";
 import { EyeJsReasoner, readText } from "koreografeye";
+import { configSolidServer, createPolicy, createTemporalPolicy, debug, eqList, purgePolicyStorage } from "./crudUtil";
 import { PolicyExecutor } from "./src/PolicyExecutor";
-import { UconRequest, UcpPatternEnforcement, createContext } from "./src/UcpPatternEnforcement";
+import { UconRequest, UcpPatternEnforcement } from "./src/UcpPatternEnforcement";
 import { UcpPlugin } from "./src/plugins/UCPPlugin";
 import { ContainerUCRulesStore as ContainerUCRulesStorage } from "./src/storage/ContainerUCRulesStorage";
-import { configSolidServer, eqList, createPolicy, purgePolicyStorage, createTemporalPolicy, getUconRule, combine, debug } from "./crudUtil";
-import { storeToString } from "./src/util/Conversion";
-import * as fs from 'fs'
+import { Store } from "n3";
 
 async function main() {
     // constants
@@ -70,17 +69,24 @@ async function main() {
     console.log();
 
     // ask write access without policy present | should fail
-    const writeNoPolicy = await ucpPatternEnforcement.calculateAccessModes({
+    const writeNoPolicyRequest : UconRequest = {
         subject: requestingParty,
         action: [aclWrite],
         resource: resource,
         owner: owner
-    })
+    }
+    const writeNoPolicy = await ucpPatternEnforcement.calculateAccessModes(writeNoPolicyRequest)
     console.log("'write' access request while no policy present.");
     console.log("No access modes should be present:", writeNoPolicy);
     if (!eqList(writeNoPolicy, [])) {
         amountErrors++
         console.log("This policy is wrong.");
+        debug({ // TODO: need empty SimplePolicy
+            representation: new Store(),
+            agreementIRI: "",
+            ruleIRI: ""
+        }, writeNoPolicyRequest, n3Rules.join('\n'))
+
 
     }
     console.log();

@@ -6,7 +6,7 @@ import { Store } from "n3";
 import { storeToString, turtleStringToStore } from "./src/util/Conversion";
 import { UconRequest, createContext } from "./src/UcpPatternEnforcement";
 import * as fs from 'fs'
-
+import * as Path from 'path'
 export async function configSolidServer(port: number): Promise<App> {
     const input: AppRunnerInput = {
         config: path.join(__dirname, "config", "memory.json"),
@@ -186,7 +186,7 @@ export function combine(policy: SimplePolicy, request: UconRequest, n3Rules: str
  * Print out instructions for eye to reason over it (assuming eye is locally installed)
  */
 export function storeToReason(combined: string): void {
-    const fileName = `fullRequest-${new Date().valueOf()}.n3`
+    const fileName = Path.join('debug',`fullRequest-${new Date().valueOf()}.n3`);
     console.log('execute with eye:', `\neye --quiet --nope --pass-only-new ${fileName}`);
     
     fs.writeFileSync(fileName, combined)
