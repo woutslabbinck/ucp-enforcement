@@ -47,9 +47,40 @@ console.log(accessModes);
 > [ 'read' ]
 ```
 
-### CRUD policy engine
+### Example: CRUD policy engine
 
-See [crud_engine.ts](./crud_engine.ts).
+In [crud_engine.ts](./crud_engine.ts), a `UconEnforcementDecision` component is initialised.
+This means that CRUD action requests can be evaluated against a set of ucon rules and an ucon rules interpreter.
+
+The **ucon rule interpretation** is a combination of N3 rules ([data-crud-rules.n3](./rules/data-crud-rules.n3)), a N3 Reasoner ([eye-js](https://github.com/eyereasoner/eye-js)), a plugin executor ([`PolicyExecutor`](./src/PolicyExecutor.ts)) and a plugin ([`UcpPlugin`](src/plugins/UCPPlugin.ts)). These components all work together as described in [Koreografeye](https://github.com/eyereasoner/Koreografeye).
+
+The **set of ucon rules** can be dynamically generated and added through the ucon rules store through the functions `createPolicy` and `createTemporalPolicy` (see [crudUtil.ts](./crudUtil.ts)).
+
+The code in `crud_engine.ts` evaluates 12[ `UconRequest`](./src/UcpPatternEnforcement.ts)s using an instance of [`UconEnforcementDecision`](./src/UcpPatternEnforcement.ts) against a variety of ucon rule sets to verify the engine is working as intended.
+
+When an evaluation fails, e.g. through changing the code, an N3 file will be created in the `debug` directory.
+This file will include the request (transformed to RDF and serialized to n-triples), the ucon rule(s) and the N3 interpretation rules.
+The contents of the file can then be used with the eye reasoner (either local or [online](https://editor.notation3.org/)).
+
+An example of such file is [crud_full](./crud_full.n3), the conclusion of which can be locally tested with following command: 
+
+```sh
+eye --quiet --nope --pass-only-new crud_full.n3 
+```
+
+With as conclusion:
+
+```ttl
+@prefix fno: <https://w3id.org/function/ontology#>.
+@prefix : <http://example.org/>.
+@prefix acl: <http://www.w3.org/ns/auth/acl#>.
+
+<urn:uuid:b5e1c037-8f35-41f7-a0dc-58ed0efe229e> a fno:Execution.
+<urn:uuid:b5e1c037-8f35-41f7-a0dc-58ed0efe229e> fno:executes :dataUsage.
+<urn:uuid:b5e1c037-8f35-41f7-a0dc-58ed0efe229e> :accessModesAllowed acl:Write.
+```
+
+
 
 In this code base, a test framework is created for CRUD request policies against a crud (ish) ODRL framework.
 
