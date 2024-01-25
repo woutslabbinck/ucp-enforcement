@@ -175,7 +175,7 @@ export function combine(policy: SimplePolicy, request: UconRequest, n3Rules: str
     // create context request
     const context = storeToString(createContext(request))
     // create file with N3 rules, context and policy
-    const fileContent = [policy, context, n3Rules].join('\n')
+    const fileContent = [policyString, context, n3Rules].join('\n')
     return fileContent
 }
 
