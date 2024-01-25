@@ -28,5 +28,16 @@ export class DirectoryUCRulesStorage implements UCRulesStorage {
         }
         return store;
     }
+
+
+    public async addRule(rule: Store): Promise<void> {
+        throw Error('not implemented');
+    }
+    public async getRule(identifier: string): Promise<Store> {
+        throw Error('not implemented');
+    }
+    public async deleteRule(identifier: string): Promise<void> {
+        throw Error('not implemented');
+    }
 }
 

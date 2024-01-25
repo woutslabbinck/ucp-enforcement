@@ -76,7 +76,7 @@ async function main() {
     if (!eqList(writeNoPolicy, [])) amountErrors++
 
     // ask read access while write policy present
-    await createPolicy(uconRulesContainer, { action: odrlWrite, owner, resource, requestingParty })
+    await createPolicy(uconRulesStorage, { action: odrlWrite, owner, resource, requestingParty })
     const readWhileWritePolicy = await ucpPatternEnforcement.calculateAccessModes({
         subject: requestingParty,
         action: [aclRead],
@@ -90,7 +90,7 @@ async function main() {
     if (!eqList(readWhileWritePolicy, [])) amountErrors++
 
     // ask write access while read policy present
-    await createPolicy(uconRulesContainer, { action: odrlRead, owner, resource, requestingParty })
+    await createPolicy(uconRulesStorage, { action: odrlRead, owner, resource, requestingParty })
     const writeWhileReadPolicy = await ucpPatternEnforcement.calculateAccessModes({
         subject: requestingParty,
         action: [aclWrite],
@@ -104,7 +104,7 @@ async function main() {
     if (!eqList(writeWhileReadPolicy, [])) amountErrors++
 
     // ask read access while temporal policy present (and no others) | should fail
-    await createTemporalPolicy(uconRulesContainer, { action: odrlRead, owner, resource, requestingParty }, { from: new Date("2024-01-01"), to: new Date("2024-01-02") })
+    await createTemporalPolicy(uconRulesStorage, { action: odrlRead, owner, resource, requestingParty }, { from: new Date("2024-01-01"), to: new Date("2024-01-02") })
     const readWhileTemporalReadPolicy = await ucpPatternEnforcement.calculateAccessModes({
         subject: requestingParty,
         action: [aclRead],
@@ -118,7 +118,7 @@ async function main() {
     if (!eqList(readWhileTemporalReadPolicy, [])) amountErrors++
 
     // create temporal (from - to) policy (within time)
-    await createTemporalPolicy(uconRulesContainer, { action: odrlRead, owner, resource, requestingParty }, { from: new Date(0), to: new Date(new Date().valueOf() + 30_1000) })
+    await createTemporalPolicy(uconRulesStorage, { action: odrlRead, owner, resource, requestingParty }, { from: new Date(0), to: new Date(new Date().valueOf() + 30_1000) })
     const readWhileTemporalReadPolicyWithin = await ucpPatternEnforcement.calculateAccessModes({
         subject: requestingParty,
         action: [aclRead],
@@ -132,7 +132,7 @@ async function main() {
     if (!eqList(readWhileTemporalReadPolicyWithin, [])) amountErrors++
 
     // ask read access while read policy present
-    await createPolicy(uconRulesContainer, { action: odrlRead, owner, resource, requestingParty })
+    await createPolicy(uconRulesStorage, { action: odrlRead, owner, resource, requestingParty })
     const readPolicy = await ucpPatternEnforcement.calculateAccessModes({
         subject: requestingParty,
         action: [aclRead],
@@ -147,7 +147,7 @@ async function main() {
 
 
     // ask write access while write policy present
-    await createPolicy(uconRulesContainer, { action: odrlWrite, owner, resource, requestingParty })
+    await createPolicy(uconRulesStorage, { action: odrlWrite, owner, resource, requestingParty })
     const writePolicy = await ucpPatternEnforcement.calculateAccessModes({
         subject: requestingParty,
         action: [aclWrite],
@@ -162,7 +162,7 @@ async function main() {
 
 
     // ask read and write access while use policy present
-    await createPolicy(uconRulesContainer, { action: odrlUse, owner, resource, requestingParty })
+    await createPolicy(uconRulesStorage, { action: odrlUse, owner, resource, requestingParty })
     const usePolicy = await ucpPatternEnforcement.calculateAccessModes({
         subject: requestingParty,
         action: [aclWrite, aclRead],
