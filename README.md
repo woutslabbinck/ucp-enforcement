@@ -80,16 +80,8 @@ With as conclusion:
 <urn:uuid:b5e1c037-8f35-41f7-a0dc-58ed0efe229e> :accessModesAllowed acl:Write.
 ```
 
+As an extra, the same evaluation is also tested for a crud engine that also supports temporal policies. The only difference in that engine is that a [second set of N3 interpretation rules](./rules/data-crud-temporal.n3) are added to interpret temporal ucon rules.
 
-
-In this code base, a test framework is created for CRUD request policies against a crud (ish) ODRL framework.
-
-In an [online N3 engine](https://editor.notation3.org/), a [full request](./full_request.n3) can be tested.
-
-Current issue: because we use koreografeye v0.4.6 (which has v5.0.6 eyereasoner), the (lack of) constraints are not properly checked.
-As a result, when a ucon policy is added to the ucon policies store with constraints, they will not be checked. (so time constraints will not be checked, immediately giving access).
-
-The problem lies with a rule like `?SCOPE log:notIncludes { ?permission odrl:constraint ?anything }.`, which unfortunately does not work as expected.
 
 ### Next steps
 
