@@ -2,10 +2,12 @@
 import { AccessMode } from "@solid/community-server";
 import { EyeJsReasoner, readText } from "koreografeye";
 import { PolicyExecutor } from "./src/PolicyExecutor";
-import { UcpPatternEnforcement } from "./src/UcpPatternEnforcement";
+import { UconRequest, UcpPatternEnforcement } from "./src/UcpPatternEnforcement";
 import { UcpPlugin } from "./src/plugins/UCPPlugin";
 import { ContainerUCRulesStore as ContainerUCRulesStorage } from "./src/storage/ContainerUCRulesStorage";
-import { configSolidServer, eqList, createPolicy, purgePolicyStorage, createTemporalPolicy } from "./crudUtil";
+import { configSolidServer, eqList, createPolicy, purgePolicyStorage, createTemporalPolicy, debug, SimplePolicy } from "./crudUtil";
+import { Store } from "n3";
+import * as fs from 'fs'
 
 async function main() {
     // constants
@@ -22,6 +24,12 @@ async function main() {
     const portNumber = 3123
     const containerURL = `http://localhost:${portNumber}/`
 
+    const emptyPolicy: SimplePolicy = {
+        representation: new Store(),
+        agreementIRI: "",
+        ruleIRI: ""
+    }
+    
     // start server
     // configured as following command: $ npx @solid/community-server -p 3123 -c config/memory.json     
     const server = await configSolidServer(portNumber)
@@ -34,6 +42,11 @@ async function main() {
     }).then(res => console.log("status creating ucon container:", res.status))
     console.log();
 
+    // create debug directory if it doesn't exist yet
+    const createDirIfNotExists = (dir: fs.PathLike) =>
+        !fs.existsSync(dir) ? fs.mkdirSync(dir) : undefined;
+
+    createDirIfNotExists('debug');
 
     // load plugin
     const plugins = { "http://example.org/dataUsage": new UcpPlugin() }
@@ -51,129 +64,210 @@ async function main() {
 
     let amountErrors = 0;
 
-    // ask read access without policy present | should fail
-    const readNoPolicy = await ucpPatternEnforcement.calculateAccessModes({
+     // ask read access without policy present | should fail
+     const readNoPolicyRequest = {
         subject: requestingParty,
         action: [aclRead],
         resource: resource,
         owner: owner
-    })
+    }
+    const readNoPolicy = await ucpPatternEnforcement.calculateAccessModes(readNoPolicyRequest)
     console.log("'read' access request while no policy present.");
     console.log("No access modes should be present:", readNoPolicy);
+    if (!eqList(readNoPolicy, [])) {
+        amountErrors++
+        console.log("This policy is wrong.");
+        debug(emptyPolicy, readNoPolicyRequest, n3Rules.join('\n'))
+    }
     console.log();
-    if (!eqList(readNoPolicy, [])) amountErrors++
 
     // ask write access without policy present | should fail
-    const writeNoPolicy = await ucpPatternEnforcement.calculateAccessModes({
+    const writeNoPolicyRequest: UconRequest = {
         subject: requestingParty,
         action: [aclWrite],
         resource: resource,
         owner: owner
-    })
+    }
+    const writeNoPolicy = await ucpPatternEnforcement.calculateAccessModes(writeNoPolicyRequest)
     console.log("'write' access request while no policy present.");
     console.log("No access modes should be present:", writeNoPolicy);
+    if (!eqList(writeNoPolicy, [])) {
+        amountErrors++
+        console.log("This policy is wrong.");
+        debug(emptyPolicy, writeNoPolicyRequest, n3Rules.join('\n'))
+    }
     console.log();
-    if (!eqList(writeNoPolicy, [])) amountErrors++
 
     // ask read access while write policy present
-    await createPolicy(uconRulesStorage, { action: odrlWrite, owner, resource, requestingParty })
-    const readWhileWritePolicy = await ucpPatternEnforcement.calculateAccessModes({
+    const readWhileWritePolicyRequest = {
         subject: requestingParty,
         action: [aclRead],
         resource: resource,
         owner: owner
-    })
+    }
+    let writePolicy = await createPolicy(uconRulesStorage, { action: odrlWrite, owner, resource, requestingParty })
+    const readWhileWritePolicy = await ucpPatternEnforcement.calculateAccessModes(readWhileWritePolicyRequest)
     await purgePolicyStorage(uconRulesContainer);
     console.log("'read' access request while 'write' policy present.")
     console.log("No access modes should be present:", readWhileWritePolicy);
+    if (!eqList(readWhileWritePolicy, [])) {
+        amountErrors++
+        console.log("This policy is wrong.");
+        debug(writePolicy, readWhileWritePolicyRequest, n3Rules.join('\n'))
+    }
     console.log();
-    if (!eqList(readWhileWritePolicy, [])) amountErrors++
 
     // ask write access while read policy present
-    await createPolicy(uconRulesStorage, { action: odrlRead, owner, resource, requestingParty })
-    const writeWhileReadPolicy = await ucpPatternEnforcement.calculateAccessModes({
+    const writeWhileReadPolicyRequest = {
         subject: requestingParty,
         action: [aclWrite],
         resource: resource,
         owner: owner
-    })
+    }
+    let readPolicy = await createPolicy(uconRulesStorage, { action: odrlRead, owner, resource, requestingParty })
+    const writeWhileReadPolicy = await ucpPatternEnforcement.calculateAccessModes(writeWhileReadPolicyRequest)
     await purgePolicyStorage(uconRulesContainer);
     console.log("'write' access request while 'read' policy present.")
     console.log("No access modes should be present:", writeWhileReadPolicy);
+    if (!eqList(writeWhileReadPolicy, [])) {
+        amountErrors++
+        console.log("This policy is wrong.");
+        debug(readPolicy, writeWhileReadPolicyRequest, n3Rules.join('\n'))
+    }
     console.log();
-    if (!eqList(writeWhileReadPolicy, [])) amountErrors++
 
-    // ask read access while temporal policy present (and no others) | should fail
-    await createTemporalPolicy(uconRulesStorage, { action: odrlRead, owner, resource, requestingParty }, { from: new Date("2024-01-01"), to: new Date("2024-01-02") })
-    const readWhileTemporalReadPolicy = await ucpPatternEnforcement.calculateAccessModes({
+    // ask read access while temporal policy present (and no others) | out of bound
+    const readWhileTemporalReadPolicyRequest = {
         subject: requestingParty,
         action: [aclRead],
         resource: resource,
         owner: owner
-    })
+    }
+    const temporalReadPolicyOutOfBound = await createTemporalPolicy(uconRulesStorage, { action: odrlRead, owner, resource, requestingParty }, { from: new Date("2024-01-01"), to: new Date("2024-01-02") })
+    const readWhileTemporalReadPolicy = await ucpPatternEnforcement.calculateAccessModes(readWhileTemporalReadPolicyRequest)
     await purgePolicyStorage(uconRulesContainer);
     console.log("'read' access request while temporal 'read' policy present. Out of bound, so no access")
     console.log("No access modes should be present:", readWhileTemporalReadPolicy);
+    if (!eqList(readWhileTemporalReadPolicy, [])) {
+        amountErrors++
+        console.log("This policy is wrong.");
+        debug(temporalReadPolicyOutOfBound, readWhileTemporalReadPolicyRequest, n3Rules.join('\n'))
+    }
     console.log();
-    if (!eqList(readWhileTemporalReadPolicy, [])) amountErrors++
 
-    // create temporal (from - to) policy (within time)
-    await createTemporalPolicy(uconRulesStorage, { action: odrlRead, owner, resource, requestingParty }, { from: new Date(0), to: new Date(new Date().valueOf() + 30_1000) })
-    const readWhileTemporalReadPolicyWithin = await ucpPatternEnforcement.calculateAccessModes({
+    // ask read access while temporal policy present (and no others) | within bound 
+    const readWhileTemporalReadPolicyWithinRequest = {
         subject: requestingParty,
         action: [aclRead],
         resource: resource,
         owner: owner
-    })
+    }
+    const temporalReadPolicyWithinBound = await createTemporalPolicy(uconRulesStorage, { action: odrlRead, owner, resource, requestingParty }, { from: new Date(0), to: new Date(new Date().valueOf() + 30_000) })
+    const readWhileTemporalReadPolicyWithin = await ucpPatternEnforcement.calculateAccessModes(readWhileTemporalReadPolicyWithinRequest)
     await purgePolicyStorage(uconRulesContainer);
-    console.log("'read' access request while temporal 'read' policy present. Within bound, still no access as there is no rule to interpret temporal ucon rules.")
+    console.log("'read' access request while temporal 'read' policy present. Within bound. However, no N3 rule for interpretation.")
     console.log("No access modes should be present:", readWhileTemporalReadPolicyWithin);
+    if (!eqList(readWhileTemporalReadPolicyWithin, [])) {
+        amountErrors++
+        console.log("This policy is wrong.");
+        debug(temporalReadPolicyWithinBound, readWhileTemporalReadPolicyWithinRequest, n3Rules.join('\n'))
+    }
     console.log();
-    if (!eqList(readWhileTemporalReadPolicyWithin, [])) amountErrors++
 
-    // ask read access while read policy present
-    await createPolicy(uconRulesStorage, { action: odrlRead, owner, resource, requestingParty })
-    const readPolicy = await ucpPatternEnforcement.calculateAccessModes({
-        subject: requestingParty,
-        action: [aclRead],
-        resource: resource,
-        owner: owner
-    })
-    await purgePolicyStorage(uconRulesContainer);
-    console.log("'read' access request while 'read' policy present.")
-    console.log("Read access mode should be present:", readPolicy);
-    console.log();
-    if (!eqList(readPolicy, [AccessMode.read])) amountErrors++
-
-
-    // ask write access while write policy present
-    await createPolicy(uconRulesStorage, { action: odrlWrite, owner, resource, requestingParty })
-    const writePolicy = await ucpPatternEnforcement.calculateAccessModes({
+    // ask write access while temporal policy present (and no others) | out of bound
+    const writeWhileTemporalReadPolicyRequest = {
         subject: requestingParty,
         action: [aclWrite],
         resource: resource,
         owner: owner
-    })
+    }
+    const temporalWritePolicyOutOfBound = await createTemporalPolicy(uconRulesStorage, { action: odrlWrite, owner, resource, requestingParty }, { from: new Date("2024-01-01"), to: new Date("2024-01-02") })
+    const writeWhileTemporalReadPolicy = await ucpPatternEnforcement.calculateAccessModes(writeWhileTemporalReadPolicyRequest)
+    await purgePolicyStorage(uconRulesContainer);
+    console.log("'write' access request while temporal 'write' policy present. Out of bound, so no access")
+    console.log("No access modes should be present:", writeWhileTemporalReadPolicy);
+    if (!eqList(writeWhileTemporalReadPolicy, [])) {
+        amountErrors++
+        console.log("This policy is wrong.");
+        debug(temporalWritePolicyOutOfBound, writeWhileTemporalReadPolicyRequest, n3Rules.join('\n'))
+    }
+    console.log();
+
+    // ask write access while temporal policy present (and no others) | within bound 
+    const writeWhileTemporalReadPolicyWithinRequest = {
+        subject: requestingParty,
+        action: [aclWrite],
+        resource: resource,
+        owner: owner
+    }
+    const temporalWritePolicyWithinBound = await createTemporalPolicy(uconRulesStorage, { action: odrlWrite, owner, resource, requestingParty }, { from: new Date(0), to: new Date(new Date().valueOf() + 30_000) })
+    const writeWhileTemporalReadPolicyWithin = await ucpPatternEnforcement.calculateAccessModes(writeWhileTemporalReadPolicyWithinRequest)
+    await purgePolicyStorage(uconRulesContainer);
+    console.log("'write' access request while temporal 'write' policy present. Within bound. However, no N3 rule for interpretation.")
+    console.log("No access modes should be present:", writeWhileTemporalReadPolicyWithin);
+    if (!eqList(writeWhileTemporalReadPolicyWithin, [])) {
+        amountErrors++
+        console.log("This policy is wrong.");
+        debug(temporalWritePolicyWithinBound, writeWhileTemporalReadPolicyWithinRequest, n3Rules.join('\n'))
+    }
+    console.log();
+
+    // ask read access while read policy present
+    const readPolicyRequest = {
+        subject: requestingParty,
+        action: [aclRead],
+        resource: resource,
+        owner: owner
+    }
+    readPolicy = await createPolicy(uconRulesStorage, { action: odrlRead, owner, resource, requestingParty })
+    const readPolicyWhilePresent = await ucpPatternEnforcement.calculateAccessModes(readPolicyRequest)
+    await purgePolicyStorage(uconRulesContainer);
+    console.log("'read' access request while 'read' policy present.")
+    console.log("Read access mode should be present:", readPolicyWhilePresent);
+    if (!eqList(readPolicyWhilePresent, [AccessMode.read])) {
+        amountErrors++
+        console.log("This policy is wrong.");
+        debug(readPolicy, readPolicyRequest, n3Rules.join('\n'))
+    }
+    console.log();
+
+    // ask write access while write policy present
+    const writePolicyRequest = {
+        subject: requestingParty,
+        action: [aclWrite],
+        resource: resource,
+        owner: owner
+    }
+    writePolicy = await createPolicy(uconRulesStorage, { action: odrlWrite, owner, resource, requestingParty })
+    const writePolicyWhilePresent = await ucpPatternEnforcement.calculateAccessModes(writePolicyRequest)
     await purgePolicyStorage(uconRulesContainer);
     console.log("'write' access request while 'write' policy present.")
-    console.log("Write access mode should be present:", writePolicy);
+    console.log("Write access mode should be present:", writePolicyWhilePresent);
+    if (!eqList(writePolicyWhilePresent, [AccessMode.write])) {
+        amountErrors++
+        console.log("This policy is wrong.");
+        debug(writePolicy, writePolicyRequest, n3Rules.join('\n'))
+    }
     console.log();
-    if (!eqList(writePolicy, [AccessMode.write])) amountErrors++
-
 
     // ask read and write access while use policy present
-    await createPolicy(uconRulesStorage, { action: odrlUse, owner, resource, requestingParty })
-    const usePolicy = await ucpPatternEnforcement.calculateAccessModes({
+    const usePolicyRequest = {
         subject: requestingParty,
         action: [aclWrite, aclRead],
         resource: resource,
         owner: owner
-    })
+    }
+    const usePolicy = await createPolicy(uconRulesStorage, { action: odrlUse, owner, resource, requestingParty })
+    const RWPolicyWhilePresent = await ucpPatternEnforcement.calculateAccessModes(usePolicyRequest)
     await purgePolicyStorage(uconRulesContainer);
     console.log("'read' and 'write' access request while 'use' policy present.")
-    console.log("Both access modes should be present:", usePolicy);
+    console.log("Both access modes should be present:", RWPolicyWhilePresent);
+    if (!eqList(RWPolicyWhilePresent, [AccessMode.write, AccessMode.read])) {
+        amountErrors++
+        console.log("This policy is wrong.");
+        debug(usePolicy, usePolicyRequest, n3Rules.join('\n'))
+    }
     console.log();
-    if (!eqList(usePolicy, [AccessMode.write, AccessMode.read])) amountErrors++
 
     // stop server
     await server.stop()
