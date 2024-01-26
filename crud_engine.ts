@@ -1,4 +1,3 @@
-
 import { AccessMode } from "@solid/community-server";
 import { EyeJsReasoner, readText } from "koreografeye";
 import { PolicyExecutor } from "./src/PolicyExecutor";

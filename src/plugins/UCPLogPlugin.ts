@@ -1,13 +1,14 @@
 import { Store } from "n3";
 import { IPolicyType, PolicyPlugin } from "../PolicyExecutor";
 import { AccessMode } from "../UMAinterfaces";
+import { Conclusion } from "../UcpPatternEnforcement";
 import { accesModesAllowed } from "../util/constants";
 
-export const ucpPluginIdentifier = 'http://example.org/dataUsage'
+export const ucpPluginIdentifier = 'http://example.org/dataUsageLog'
 
-export class UcpPlugin extends PolicyPlugin {
+export class UCPLogPlugin extends PolicyPlugin {
 
-    public async execute(mainStore: Store, policyStore: Store, policy: IPolicyType): Promise<AccessMode[]> {
+    public async execute(mainStore: Store, policyStore: Store, policy: IPolicyType): Promise<Conclusion> {
         const accessModes : AccessMode[] = []
         for (const accessMode of policy.args[accesModesAllowed]) {
             // This is ugly to go back to enum values
@@ -19,7 +20,12 @@ export class UcpPlugin extends PolicyPlugin {
         
         // TODO: think about no permission (explicit)
 
-        return accessModes
+        return {
+            ruleIRI: policy.args['http://example.org/UCrule'][0].value,
+            interpretationIRI: policy.args['http://example.org/N3Identifier'][0].value,
+            grants: accessModes,
+            timestamp: new Date(policy.args['http://purl.org/dc/terms/issued'][0].value),
+        }
     }
 
 }    

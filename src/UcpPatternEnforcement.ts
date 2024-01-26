@@ -64,6 +64,51 @@ export class UcpPatternEnforcement implements UconEnforcementDecision {
         }
         return accessModes
     }
+
+    async calculateAndExplainAccessModes(request: UconRequest): Promise<Explanation> {
+        const contextStore = createContext(request)
+
+        const knowledgeBase = new Store()
+
+        knowledgeBase.addQuads((await this.uconRulesStorage.getStore()).getQuads(null, null, null, null))
+        knowledgeBase.addQuads(contextStore.getQuads(null, null, null, null))
+
+        const reasoningResult = await this.reasoner.reason(knowledgeBase, this.koreografeyeOdrlRules);
+
+        const conclusions: Conclusion[] = []
+        const executedPolicies = await this.executor.executePolicies(reasoningResult)
+
+        if (executedPolicies.length === 0) {
+            // based on all the rules, no access
+        }
+
+        for (const executedPolicy of executedPolicies) {
+            // expect that the result of the executedPolicy consists of:
+            //  * usage control rule identifier
+            //  * N3 interpretation rule identifier
+            //  * time issued
+            //  * access modes granted
+
+            // if not, throw Error -> the wrong plugin is used | Note: throwing error is not happening yet
+
+            conclusions.push(executedPolicy.result)
+        }
+
+        // calculation of decision based on the algorithm and the conclusions
+        // Note: currently hardcoded to be the union.
+        const grants = conclusions.map(conclusion => conclusion.grants).flat()
+        // remove the duplicates
+        const decision = Array.from(new Set(grants))
+        return {
+            decision: decision,
+            request: {
+                raw: request,
+                rdf: contextStore
+            },
+            algorithm: DecisionAlgorithm.union,
+            conclusions: conclusions,
+        }
+    }
 }
 
 /**
@@ -149,7 +194,7 @@ export enum DecisionAlgorithm {
      * The decision will be based on binary operators of the **policies** to which the {@link Conclusion | conclusions} belong.
      * If the policies don't explicitly state on how to interpret the multiple rules, **intersection** on the grants of the rules (r1 AND r2 ... ri) will be used.
      */
-    policy 
+    policy
 }
 
 /**
