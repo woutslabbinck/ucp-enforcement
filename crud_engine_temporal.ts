@@ -1,7 +1,6 @@
 import * as fs from 'fs';
 import { EyeJsReasoner, readText } from "koreografeye";
-import { Store } from "n3";
-import { SimplePolicy, UCPPolicy, configSolidServer, purgePolicyStorage, validate } from "./crudUtil";
+import { UCPPolicy, configSolidServer, purgePolicyStorage, validate } from "./crudUtil";
 import { PolicyExecutor } from "./src/PolicyExecutor";
 import { AccessMode } from "./src/UMAinterfaces";
 import { UconRequest, UcpPatternEnforcement } from "./src/UcpPatternEnforcement";
@@ -22,13 +21,7 @@ async function main() {
 
     const portNumber = 3123
     const containerURL = `http://localhost:${portNumber}/`
-
-    const emptyPolicy: SimplePolicy = {
-        representation: new Store(),
-        agreementIRI: "",
-        ruleIRI: ""
-    }
-
+    
     // start server
     // configured as following command: $ npx @solid/community-server -p 3123 -c config/memory.json     
     const server = await configSolidServer(portNumber)
