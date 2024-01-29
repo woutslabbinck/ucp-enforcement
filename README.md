@@ -56,6 +56,31 @@ The **ucon rule interpretation** is a combination of N3 rules ([data-crud-rules.
 
 The **set of ucon rules** can be dynamically generated and added through the ucon rules store through the functions `createPolicy` and `createTemporalPolicy` (see [crudUtil.ts](./crudUtil.ts)).
 
+#### Initialisation
+
+```ts
+import { EyeJsReasoner, readText } from "koreografeye";
+import { UcpPlugin } from "./src/plugins/UCPPlugin";
+import { ContainerUCRulesStorage } from "./src/storage/ContainerUCRulesStorage";
+import { PolicyExecutor } from "./src/PolicyExecutor";
+
+// load plugin
+const plugins = { "http://example.org/dataUsage": new UcpPlugin() }
+// instantiate koreografeye policy executor
+const policyExecutor = new PolicyExecutor(plugins)
+// ucon storage
+const uconRulesStorage = new ContainerUCRulesStorage(uconRulesContainer)
+// load N3 Rules from a directory | TODO: utils are needed
+const n3Rules: string[] = [readText('./rules/data-crud-rules.n3')!]
+// instantiate the enforcer using the policy executor,
+const ucpPatternEnforcement = new UcpPatternEnforcement(uconRulesStorage, n3Rules, new EyeJsReasoner([
+        "--quiet",
+        "--nope",
+        "--pass"]), policyExecutor)
+```
+
+
+
 The code in `crud_engine.ts` evaluates 12[ `UconRequest`](./src/UcpPatternEnforcement.ts)s using an instance of [`UconEnforcementDecision`](./src/UcpPatternEnforcement.ts) against a variety of ucon rule sets to verify the engine is working as intended.
 
 When an evaluation fails, e.g. through changing the code, an N3 file will be created in the `debug` directory.
@@ -82,6 +107,56 @@ With as conclusion:
 
 As an extra, the same evaluation is also tested for a crud engine that also supports temporal policies. The only difference in that engine is that a [second set of N3 interpretation rules](./rules/data-crud-temporal.n3) are added to interpret temporal ucon rules.
 
+### Example: explanation after decision
+
+In [log_engine.ts](./log_engine.ts), a `UconEnforcementDecision` component is initialised. 
+Here, `calculateAndExplainAccessModes` is used to not only decide the access modes calculated, but also to add the explanation to why these access modes would be granted.
+
+For this, another plugin ([UCPLogPlugin](./src/plugins/UCPLogPlugin.ts)) and rule interpretation ([log-usage-rule.n3](./rules/log-usage-rule.n3)) is required.
+
+The engine is initialised as follows:
+
+```js
+import { EyeJsReasoner, readText } from "koreografeye";
+import { UcpPlugin } from "./src/plugins/UCPPlugin";
+import { ContainerUCRulesStorage } from "./src/storage/ContainerUCRulesStorage";
+import { PolicyExecutor } from "./src/PolicyExecutor";
+
+// load plugin
+const plugins = { "http://example.org/dataUsageLog": new UCPLogPlugin() }
+// instantiate koreografeye policy executor
+const policyExecutor = new PolicyExecutor(plugins)
+// ucon storage
+const uconRulesStorage = new ContainerUCRulesStorage(uconRulesContainer)
+// load N3 Rules from a directory | TODO: utils are needed
+const n3Rules: string[] = [readText('./rules/log-usage-rule.n3')!]
+// instantiate the enforcer using the policy executor,
+const ucpPatternEnforcement = new UcpPatternEnforcement(uconRulesStorage, n3Rules, new EyeJsReasoner([
+  "--quiet",
+  "--nope",
+  "--pass"]), policyExecutor)
+```
+When evaluating a UCONRequest, an **Explanation** is retrieved.
+
+```ts
+const explanation = await ucpDecide.calculateAndExplainAccessModes({
+    subject: "https://woslabbi.pod.knows.idlab.ugent.be/profile/card#me",
+    action: ["http://www.w3.org/ns/auth/acl#Read"],
+    resource: "http://localhost:3000/test.ttl",
+    owner: "http://localhost:3000/alice/profile/card#me"
+});
+```
+
+An **Explanation** consists of four components:
+
+- **decision**: This is the same as the grants (array of access modes) from `calculateAccessModes`. It is the **result** of the evaluation
+- **request**: The input request
+- **conclusions**: The conclusions of the reasoner. A conclusion itself consists of four parts: the **Rule Identifier**, the **Interpration N3 Rule Identifier**, the **grants** allowed (the actual conclusion) and the **timestamp** at which the conclusion was generated. A conclusion can be seen as the proof of following function: $interpretation(rule, context, timestamp) -> grants$
+- **algorithm**: Which algorithm is used to interpret the set of conclusions
+  - Note: only the **union** operator is currently implemented. That is: $\forall c \in C. grant \in c \Rightarrow grant \in D$ </br>
+    For all conclusions in **Conclusions**, if a grant is in conclusion, then it is part of the list of grants in **Decision**.
+
+Having the **Explanation** after an evaluation thus allows for logging with provenance/proof of why a certain action was granted at a certain time.
 
 ### Next steps
 
