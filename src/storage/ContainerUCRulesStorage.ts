@@ -3,7 +3,7 @@ import { UCRulesStorage } from "./UCRulesStorage";
 import { storeToString, turtleStringToStore } from "../util/Conversion";
 
 type RequestInfo = string | Request;
-export class ContainerUCRulesStore implements UCRulesStorage {
+export class ContainerUCRulesStorage implements UCRulesStorage {
     private containerURL: string;
     private fetch: (input: RequestInfo, init?: RequestInit | undefined) => Promise<Response>;
     /**

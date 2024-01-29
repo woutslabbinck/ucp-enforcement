@@ -5,7 +5,7 @@ import { PolicyExecutor } from "./src/PolicyExecutor";
 import { AccessMode } from "./src/UMAinterfaces";
 import { UconRequest, UcpPatternEnforcement } from "./src/UcpPatternEnforcement";
 import { UcpPlugin } from "./src/plugins/UCPPlugin";
-import { ContainerUCRulesStore as ContainerUCRulesStorage } from "./src/storage/ContainerUCRulesStorage";
+import { ContainerUCRulesStorage } from "./src/storage/ContainerUCRulesStorage";
 
 async function main() {
     // constants

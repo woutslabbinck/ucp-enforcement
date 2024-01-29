@@ -8,7 +8,7 @@ import { Explanation, UconEnforcementDecision, UconRequest, createContext } from
 import { readLdpRDFResource } from "./src/storage/ContainerUCRulesStorage";
 import { UCRulesStorage } from "./src/storage/UCRulesStorage";
 import { storeToString, turtleStringToStore } from "./src/util/Conversion";
-import { UnknownObject } from "@solid/community-server/templates/types/oidc-provider";
+
 export async function configSolidServer(port: number): Promise<App> {
     const input: AppRunnerInput = {
         config: path.join(__dirname, "config", "memory.json"),
@@ -77,42 +77,6 @@ export function createConstraints(ruleIRI: string, constraints: Constraint[]): s
     }
     return constraintsString
 }
-/**
- * Create an instantiated temporal usage control policy using ODRL and add it to the policy container
- * @param uconStorage 
- * @param type 
- * @returns 
- */
-export async function createTemporalPolicy(uconStorage: UCRulesStorage, type: UCPPolicy, window: { from: Date, to: Date }): Promise<SimplePolicy> {
-    const policyIRI: string = `http://example.org/${new Date().valueOf()}#`
-    let { representation: policy, ruleIRI, agreementIRI } = await basicPolicy(type, policyIRI)
-
-    // add from constraint 
-    const constraint1 = `
-    @prefix xsd: <http://www.w3.org/2001/XMLSchema#>.
-    @prefix odrl: <http://www.w3.org/ns/odrl/2/> .
-    <${ruleIRI}> odrl:constraint [
-        odrl:leftOperand odrl:dateTime ;
-        odrl:operator odrl:gt ;
-        odrl:rightOperand "${window.from.toISOString()}"^^xsd:dateTime ] .`
-    // add to constraint
-    const constraint2 = `
-    @prefix xsd: <http://www.w3.org/2001/XMLSchema#>.
-    @prefix odrl: <http://www.w3.org/ns/odrl/2/> .
-    <${ruleIRI}> odrl:constraint [
-        odrl:leftOperand odrl:dateTime ;
-        odrl:operator odrl:lt ;
-        odrl:rightOperand "${window.to.toISOString()}"^^xsd:dateTime ] .`
-
-    // combining rule
-    const constraintStore = await turtleStringToStore([constraint1, constraint2].join('\n'))
-    const ruleStore = new Store()
-    ruleStore.addQuads(policy.getQuads(null, null, null, null))
-    ruleStore.addQuads(constraintStore.getQuads(null, null, null, null))
-    // storing rule
-    await uconStorage.addRule(ruleStore)
-    return { representation: ruleStore, ruleIRI, agreementIRI }
-}
 
 /**
  * Interface for a Usage Control Policy.
@@ -162,17 +126,6 @@ export async function purgePolicyStorage(containerURL: string): Promise<void> {
 // util function that checks whether lists contain the same elements
 export function eqList(as: any[], bs: any[]): boolean {
     return as.length === bs.length && as.every(a => bs.includes(a))
-}
-
-export async function getUconRule(uconBaseIri: string, uconStorage: UCRulesStorage): Promise<Store> {
-    const uconStore = await uconStorage.getStore()
-    const ruleIRIs = uconStore.getSubjects('http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 'http://www.w3.org/ns/odrl/2/Permission', null)
-        .filter(subject => subject.value.includes(uconBaseIri))
-
-    if (ruleIRIs.length === 0) throw Error("No rule found in the storage.")
-    if (ruleIRIs.length > 1) throw Error("Did not expect to find multiple rules.")
-
-    return extractQuadsRecursive(uconStore, ruleIRIs[0].value)
 }
 
 /**

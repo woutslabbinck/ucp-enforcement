@@ -1,12 +1,11 @@
 import * as fs from 'fs';
 import { EyeJsReasoner, readText } from "koreografeye";
-import { Store } from "n3";
-import { SimplePolicy, UCPPolicy, configSolidServer, purgePolicyStorage, validateAndExplain } from "./crudUtil";
+import { UCPPolicy, configSolidServer, purgePolicyStorage, validateAndExplain } from "./crudUtil";
 import { PolicyExecutor } from "./src/PolicyExecutor";
 import { AccessMode } from "./src/UMAinterfaces";
 import { Explanation, UconRequest, UcpPatternEnforcement } from "./src/UcpPatternEnforcement";
 import { UCPLogPlugin } from "./src/plugins/UCPLogPlugin";
-import { ContainerUCRulesStore as ContainerUCRulesStorage } from "./src/storage/ContainerUCRulesStorage";
+import { ContainerUCRulesStorage } from "./src/storage/ContainerUCRulesStorage";
 
 async function main() {
     // constants
@@ -22,12 +21,6 @@ async function main() {
 
     const portNumber = 3123
     const containerURL = `http://localhost:${portNumber}/`
-
-    const emptyPolicy: SimplePolicy = {
-        representation: new Store(),
-        agreementIRI: "",
-        ruleIRI: ""
-    }
 
     // start server
     // configured as following command: $ npx @solid/community-server -p 3123 -c config/memory.json     

@@ -1,12 +1,13 @@
-import { EyeJsReasoner, parseAsN3Store, readText } from "koreografeye";
+import { EyeJsReasoner, readText } from "koreografeye";
+import * as path from 'path';
 import { PolicyExecutor } from "./src/PolicyExecutor";
-import { UcpPlugin } from "./src/plugins/UCPPlugin";
-import { UconRequest, UcpPatternEnforcement } from "./src/UcpPatternEnforcement";
 import { AccessMode } from "./src/UMAinterfaces";
-import { Store } from "n3";
-import * as path from 'path'
+import { UconRequest, UcpPatternEnforcement } from "./src/UcpPatternEnforcement";
+import { UcpPlugin } from "./src/plugins/UCPPlugin";
 import { DirectoryUCRulesStorage } from "./src/storage/DirectoryUCRulesStorage";
 import { storeToString } from "./src/util/Conversion";
+import { configSolidServer } from "./crudUtil";
+import { ContainerUCRulesStorage } from "./src/storage/ContainerUCRulesStorage";
 
 async function main() {
     // load plugin
@@ -79,17 +80,3 @@ async function dynamicStores() {
 
 }
 // dynamicStores()
-
-import { App, AppRunner, AppRunnerInput } from "@solid/community-server"
-import { ContainerUCRulesStore as ContainerUCRulesStorage } from "./src/storage/ContainerUCRulesStorage";
-async function configSolidServer(port: number): Promise<App> {
-    const input: AppRunnerInput = {
-        config: path.join(__dirname, "config", "memory.json"),
-        variableBindings: {
-            'urn:solid-server:default:variable:port': port,
-            'urn:solid-server:default:variable:baseUrl': `http://localhost:${port}/`,
-        }
-    }
-    const cssRunner = await new AppRunner().create(input)
-    return cssRunner
-}
