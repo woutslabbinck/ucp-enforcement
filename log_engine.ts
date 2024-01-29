@@ -1,17 +1,13 @@
+import * as fs from 'fs';
 import { EyeJsReasoner, readText } from "koreografeye";
-import { PolicyExecutor } from "./src/PolicyExecutor";
-import { Explanation, UconEnforcementDecision, UconRequest, UcpPatternEnforcement, createContext } from "./src/UcpPatternEnforcement";
-import { UcpPlugin } from "./src/plugins/UCPPlugin";
-import { ContainerUCRulesStore as ContainerUCRulesStorage } from "./src/storage/ContainerUCRulesStorage";
-import { configSolidServer, eqList, createPolicy, purgePolicyStorage, createTemporalPolicy, debug, SimplePolicy, UCPPolicy } from "./crudUtil";
 import { Store } from "n3";
-import * as fs from 'fs'
-import * as Path from 'path'
-
-import { UCPLogPlugin } from "./src/plugins/UCPLogPlugin";
-import { storeToString } from "./src/util/Conversion";
-import { UCRulesStorage } from "./src/storage/UCRulesStorage";
+import { SimplePolicy, UCPPolicy, configSolidServer, createPolicy, debug, eqList, purgePolicyStorage, validateAndExplain } from "./crudUtil";
+import { PolicyExecutor } from "./src/PolicyExecutor";
+import { Explanation, UconEnforcementDecision, UconRequest, UcpPatternEnforcement } from "./src/UcpPatternEnforcement";
+import { ContainerUCRulesStore as ContainerUCRulesStorage } from "./src/storage/ContainerUCRulesStorage";
 import { AccessMode } from "./src/UMAinterfaces";
+import { UCPLogPlugin } from "./src/plugins/UCPLogPlugin";
+import { UCRulesStorage } from "./src/storage/UCRulesStorage";
 
 async function main() {
     // constants
@@ -70,113 +66,43 @@ async function main() {
     // ask read access and write access while read policy present
     const readPolicyRequest: UconRequest = {
         subject: requestingParty,
-        action: [aclRead, aclWrite],
+        action: [aclRead],
         resource: resource,
         owner: owner
     }
-    const readPolicy: UCPPolicy = { action: odrlUse, owner, resource, requestingParty }
+    const readPolicy: UCPPolicy = { action: odrlRead, owner, resource, requestingParty }
     await validateAndExplain({
         request: readPolicyRequest,
         policies: [readPolicy],
         ucpExecutor: ucpPatternEnforcement,
         storage: uconRulesStorage,
         n3Rules: n3Rules,
+        expectedAccessModes: [AccessMode.read],
         descriptionMessage: "'read' access request while 'read' policy present.",
-        validationMessage: "Read access mode should be present:"
+    })
+    await purgePolicyStorage(uconRulesContainer);
+    
+    // ask read access while temporal policy present (and no others) | out of bound
+    const temporalReadPolicyOutOfBound: UCPPolicy = {
+        action: odrlRead, owner, resource, requestingParty,
+        constraints: [
+            {operator: "http://www.w3.org/ns/odrl/2/gt", type: "temporal", value: new Date("2024-01-01")}, // from: must be greater than given date
+            {operator: "http://www.w3.org/ns/odrl/2/lt", type: "temporal", value: new Date("2024-01-02")}, // to: must be smaller than given date
+        ]
+    }
+    await validateAndExplain({
+        request: readPolicyRequest,
+        policies: [temporalReadPolicyOutOfBound],
+        ucpExecutor: ucpPatternEnforcement,
+        storage: uconRulesStorage,
+        n3Rules: n3Rules,
+        expectedAccessModes: [],
+        descriptionMessage: "'read' access request while temporal 'read' policy present. Out of bound, so no access",
     })
     await purgePolicyStorage(uconRulesContainer);
 
     // stop server
     await server.stop()
-
-
 }
 main()
 
-/**
- * Validates a request to an ucon rules set and its interepretation.
- * Will produce a proper log when the test fails.
- * To do the decision calculation `calculateAccessModes` from {@link UconEnforcementDecision} is used.
- * 
- * Note: Currently does not clean up the ucon rules storage (it only adds).
- * @param input 
- * @returns 
- */
-async function validate(input: {
-    request: UconRequest,
-    policies: UCPPolicy[],
-    ucpExecutor: UconEnforcementDecision,
-    storage: UCRulesStorage,
-    descriptionMessage?: string,
-    validationMessage?: string,
-    n3Rules: string[]
-}): Promise<boolean> {
-    const { request, policies, ucpExecutor, storage } = input;
-    // add policies
-    const createdPolicies: SimplePolicy[] = [];
-    for (const policy of policies) {
-        const created = await createPolicy(storage, policy);
-        createdPolicies.push(created)
-    }
-    // ucp decision
-    const explanation = await ucpExecutor.calculateAccessModes(request);
-
-    const requestedActions: AccessMode[] = request.action.map(value => Object.keys(AccessMode)[Object.values(AccessMode).indexOf(value as unknown as AccessMode)] as AccessMode   // This is ugly to go back to enum values
-    )
-    // debug info
-    if (input.descriptionMessage) console.log(input.descriptionMessage);
-    const validationMessage = input.validationMessage ?? "Access modes present:"
-    console.log(validationMessage, explanation, "Access modes that should be present:", requestedActions);
-
-    const successful = eqList(explanation, requestedActions)
-    if (!successful) {
-        console.log("This policy is wrong.");
-        debug(createdPolicies, request, input.n3Rules.join('\n'))
-    }
-    console.log();
-    return successful
-}
-
-/**
- * Validates a request to an ucon rules set and its interepretation.
- * Will produce a proper log when the test fails.
- * To do the decision calculation `calculateAndExplainAccessModes` from {@link UconEnforcementDecision} is used.
- * 
- * Note: Currently does not clean up the ucon rules storage (it only adds).
- * @param input 
- * @returns 
- */
-async function validateAndExplain(input: {
-    request: UconRequest,
-    policies: UCPPolicy[],
-    ucpExecutor: UconEnforcementDecision,
-    storage: UCRulesStorage,
-    descriptionMessage?: string,
-    validationMessage?: string,
-    n3Rules: string[]
-}): Promise<{ successful: boolean, explanation: Explanation }> {
-    const { request, policies, ucpExecutor, storage } = input;
-    // add policies
-    const createdPolicies: SimplePolicy[] = [];
-    for (const policy of policies) {
-        const created = await createPolicy(storage, policy);
-        createdPolicies.push(created)
-    }
-    // ucp decision
-    const explanation = await ucpExecutor.calculateAndExplainAccessModes(request);
-
-    const requestedActions: AccessMode[] = request.action.map(value => Object.keys(AccessMode)[Object.values(AccessMode).indexOf(value as unknown as AccessMode)] as AccessMode   // This is ugly to go back to enum values
-    )
-    // debug info
-    if (input.descriptionMessage) console.log(input.descriptionMessage);
-    const validationMessage = input.validationMessage ?? "Access modes present:"
-    console.log(validationMessage, explanation.decision, "Access modes that should be present:", requestedActions);
-
-    const successful = eqList(explanation.decision, requestedActions)
-    if (!successful) {
-        console.log("This policy is wrong.");
-        debug(createdPolicies, request, input.n3Rules.join('\n'))
-    }
-    console.log();
-    return { successful, explanation }
-}

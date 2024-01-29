@@ -12,7 +12,7 @@ export class UCPLogPlugin extends PolicyPlugin {
         const accessModes : AccessMode[] = []
         for (const accessMode of policy.args[accesModesAllowed]) {
             // This is ugly to go back to enum values
-            const enumAccesMode = Object.keys(AccessMode)[Object.values(AccessMode).indexOf(accessMode.value as unknown as AccessMode)] as AccessMode
+            const enumAccesMode = Object.values(AccessMode)[Object.values(AccessMode).indexOf(accessMode.value as unknown as AccessMode)] as AccessMode
             accessModes.push(enumAccesMode);
             
         }
