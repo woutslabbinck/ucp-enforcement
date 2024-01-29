@@ -105,7 +105,7 @@ export class UcpPatternEnforcement implements UconEnforcementDecision {
                 raw: request,
                 rdf: contextStore
             },
-            algorithm: DecisionAlgorithm.union,
+            algorithm: DecisionAlgorithm.Union,
             conclusions: conclusions,
         }
     }
@@ -144,6 +144,7 @@ export interface UconEnforcementDecision {
 
     /**
      * Calculates the modes granted (i.e. which `actions`) based on the request and the configured Usage Control Rules and how they are interpreted.
+     * Furthermore, it provides a proof + algorithm of how the decision for an access grant is calculated.
      * 
      * @param request A parsed Usage Request containing `who` wants to perform `which action` on a given `resource` with a given `context`. 
      * @returns The explanation (which includes the Access Modes)
@@ -185,16 +186,16 @@ export enum DecisionAlgorithm {
     /**
      * The decision will be based on the **union** of all the grants of the {@link Conclusion | conclusions}.
      */
-    union,
+    Union="Union",
     /**
      * The decision will be based on the **intersection** of all the grants of the {@link Conclusion | conclusions}.
      */
-    intersection,
+    Intersection = "Intersection",
     /**
      * The decision will be based on binary operators of the **policies** to which the {@link Conclusion | conclusions} belong.
      * If the policies don't explicitly state on how to interpret the multiple rules, **intersection** on the grants of the rules (r1 AND r2 ... ri) will be used.
      */
-    policy
+    Policy = "Policy"
 }
 
 /**

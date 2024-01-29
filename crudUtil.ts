@@ -36,7 +36,7 @@ export interface SimplePolicy {
  * @param baseIri 
  * @returns 
  */
-export async function basicPolicy(type: { action: string, owner: string, resource: string, requestingParty: string }, baseIri?: string): Promise<SimplePolicy> {
+export async function basicPolicy(type: UCPPolicy, baseIri?: string): Promise<SimplePolicy> {
     baseIri = baseIri ?? `http://example.org/${new Date().valueOf()}#` // better would be uuid
     const agreement = baseIri + "usagePolicy";
     const rule = baseIri + "permission";
@@ -65,7 +65,7 @@ export async function basicPolicy(type: { action: string, owner: string, resourc
  * @param type 
  * @returns 
  */
-export async function createTemporalPolicy(uconStorage: UCRulesStorage, type: { action: string, owner: string, resource: string, requestingParty: string }, window: { from: Date, to: Date }): Promise<SimplePolicy> {
+export async function createTemporalPolicy(uconStorage: UCRulesStorage, type: UCPPolicy, window: { from: Date, to: Date }): Promise<SimplePolicy> {
     const policyIRI: string = `http://example.org/${new Date().valueOf()}#`
     let { representation: policy, ruleIRI, agreementIRI } = await basicPolicy(type, policyIRI)
 
@@ -97,12 +97,23 @@ export async function createTemporalPolicy(uconStorage: UCRulesStorage, type: { 
 }
 
 /**
+ * Interface for a Usage Control Policy.
+ * Note: a Usage Control policy currently only has one rule.
+ */
+export interface UCPPolicy {
+    action: string,
+    owner: string,
+    resource: string,
+    requestingParty: string
+}
+
+/**
  * Create an instantiated usage control policy using ODRL and add it to the policy container
  * @param uconStorage 
  * @param type 
  * @returns 
  */
-export async function createPolicy(uconStorage: UCRulesStorage, type: { action: string, owner: string, resource: string, requestingParty: string }): Promise<SimplePolicy> {
+export async function createPolicy(uconStorage: UCRulesStorage, type: UCPPolicy): Promise<SimplePolicy> {
     const policyIRI: string = `http://example.org/${new Date().valueOf()}#`
     let SimplePolicy = await basicPolicy(type, policyIRI)
     await uconStorage.addRule(SimplePolicy.representation)

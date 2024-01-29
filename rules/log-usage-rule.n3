@@ -44,3 +44,37 @@
     ?dataUsagePolicyExecution :N3Identifier :odrlRead.
     ?dataUsagePolicyExecution :UCrule ?permission.
 }.
+
+# Update ODRL Rule (odrl:modify: new asset is not created, not same as acl:write)
+{ 
+  	?permission a odrl:Permission;
+      	odrl:action ?action ;
+      	odrl:target ?targetResource ;
+      	odrl:assignee ?requestedParty;
+      	odrl:assigner ?resourceOwner .   
+		
+	?action list:in (odrl:use odrl:modify). # multiple options
+
+    ?SCOPE log:notIncludes { ?permission odrl:constraint ?anything }. # No odrl:constraints may be present
+
+    # context of a request
+  	?context 
+        :resourceOwner ?resourceOwner;
+      	:requestingParty ?requestedParty;
+      	:target ?targetResource;
+      	:requestPermission acl:Write.
+
+	:currentTime :is ?currentTime .
+
+    :uuid4 log:uuid ?uuidStringdataUsagePolicyExecution.
+    ( "urn:uuid:" ?uuidStringdataUsagePolicyExecution) string:concatenation ?urnUuidStringdataUsagePolicyExecution.
+    ?dataUsagePolicyExecution log:uri ?urnUuidStringdataUsagePolicyExecution .
+} =>
+{
+    ?dataUsagePolicyExecution a fno:Execution;
+        fno:executes <http://example.org/dataUsageLog> ; 
+        :accessModesAllowed acl:Write.
+    ?dataUsagePolicyExecution dct:issued ?currentTime.
+    ?dataUsagePolicyExecution :N3Identifier :odrlWrite.
+    ?dataUsagePolicyExecution :UCrule ?permission.
+}.
