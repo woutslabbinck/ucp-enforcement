@@ -76,7 +76,7 @@ async function main() {
     if (!eqList(readNoPolicy, [])) {
         amountErrors++
         console.log("This policy is wrong.");
-        debug(emptyPolicy, readNoPolicyRequest, n3Rules.join('\n'))
+        debug([emptyPolicy], readNoPolicyRequest, n3Rules.join('\n'))
     }
     console.log();
 
@@ -93,7 +93,7 @@ async function main() {
     if (!eqList(writeNoPolicy, [])) {
         amountErrors++
         console.log("This policy is wrong.");
-        debug(emptyPolicy, writeNoPolicyRequest, n3Rules.join('\n'))
+        debug([emptyPolicy], writeNoPolicyRequest, n3Rules.join('\n'))
     }
     console.log();
 
@@ -112,7 +112,7 @@ async function main() {
     if (!eqList(readWhileWritePolicy, [])) {
         amountErrors++
         console.log("This policy is wrong.");
-        debug(writePolicy, readWhileWritePolicyRequest, n3Rules.join('\n'))
+        debug([writePolicy], readWhileWritePolicyRequest, n3Rules.join('\n'))
     }
     console.log();
 
@@ -131,7 +131,7 @@ async function main() {
     if (!eqList(writeWhileReadPolicy, [])) {
         amountErrors++
         console.log("This policy is wrong.");
-        debug(readPolicy, writeWhileReadPolicyRequest, n3Rules.join('\n'))
+        debug([readPolicy], writeWhileReadPolicyRequest, n3Rules.join('\n'))
     }
     console.log();
 
@@ -150,7 +150,7 @@ async function main() {
     if (!eqList(readWhileTemporalReadPolicy, [])) {
         amountErrors++
         console.log("This policy is wrong.");
-        debug(temporalReadPolicyOutOfBound, readWhileTemporalReadPolicyRequest, n3Rules.join('\n'))
+        debug([temporalReadPolicyOutOfBound], readWhileTemporalReadPolicyRequest, n3Rules.join('\n'))
     }
     console.log();
 
@@ -169,7 +169,7 @@ async function main() {
     if (!eqList(readWhileTemporalReadPolicyWithin, [AccessMode.read])) {
         amountErrors++
         console.log("This policy is wrong.");
-        debug(temporalReadPolicyWithinBound, readWhileTemporalReadPolicyWithinRequest, n3Rules.join('\n'))
+        debug([temporalReadPolicyWithinBound], readWhileTemporalReadPolicyWithinRequest, n3Rules.join('\n'))
     }
     console.log();
 
@@ -188,7 +188,7 @@ async function main() {
     if (!eqList(writeWhileTemporalReadPolicy, [])) {
         amountErrors++
         console.log("This policy is wrong.");
-        debug(temporalWritePolicyOutOfBound, writeWhileTemporalReadPolicyRequest, n3Rules.join('\n'))
+        debug([temporalWritePolicyOutOfBound], writeWhileTemporalReadPolicyRequest, n3Rules.join('\n'))
     }
     console.log();
 
@@ -207,7 +207,7 @@ async function main() {
     if (!eqList(writeWhileTemporalReadPolicyWithin, [AccessMode.write])) {
         amountErrors++
         console.log("This policy is wrong.");
-        debug(temporalWritePolicyWithinBound, writeWhileTemporalReadPolicyWithinRequest, n3Rules.join('\n'))
+        debug([temporalWritePolicyWithinBound], writeWhileTemporalReadPolicyWithinRequest, n3Rules.join('\n'))
     }
     console.log();
 
@@ -226,7 +226,7 @@ async function main() {
     if (!eqList(readPolicyWhilePresent, [AccessMode.read])) {
         amountErrors++
         console.log("This policy is wrong.");
-        debug(readPolicy, readPolicyRequest, n3Rules.join('\n'))
+        debug([readPolicy], readPolicyRequest, n3Rules.join('\n'))
     }
     console.log();
 
@@ -245,7 +245,7 @@ async function main() {
     if (!eqList(writePolicyWhilePresent, [AccessMode.write])) {
         amountErrors++
         console.log("This policy is wrong.");
-        debug(writePolicy, writePolicyRequest, n3Rules.join('\n'))
+        debug([writePolicy], writePolicyRequest, n3Rules.join('\n'))
     }
     console.log();
 
@@ -264,7 +264,7 @@ async function main() {
     if (!eqList(RWPolicyWhilePresent, [AccessMode.write, AccessMode.read])) {
         amountErrors++
         console.log("This policy is wrong.");
-        debug(usePolicy, usePolicyRequest, n3Rules.join('\n'))
+        debug([usePolicy], usePolicyRequest, n3Rules.join('\n'))
     }
     console.log();
 

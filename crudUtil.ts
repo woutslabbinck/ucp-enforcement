@@ -175,24 +175,26 @@ export function extractQuadsRecursive(store: Store, subjectIRI: string, existing
 }
 
 /**
- * Combine the policy with the request and the N3 rules interpreting the request into a single string
- * @param policy 
+ * Combine the policies with the request and the N3 rules interpreting the request into a single string
+ * @param policies 
  * @param request 
  * @param rules 
  */
-export function combine(policy: SimplePolicy, request: UconRequest, n3Rules: string): string{
-    // get Policy
-    const policyString = storeToString(policy.representation)
-    // create context request
+export function combine(policies: SimplePolicy[], request: UconRequest, n3Rules: string): string{
+    // get string representation of the policies
+    let policiesString = ""
+    for (const createdPolicy of policies) {
+        policiesString += storeToString(createdPolicy.representation)
+    }    // create context request
     const context = storeToString(createContext(request))
     // create file with N3 rules, context and policy
-    const fileContent = [policyString, context, n3Rules].join('\n')
+    const fileContent = [policiesString, context, n3Rules].join('\n')
     return fileContent
 }
 
 /**
  * Really needs a better name.
- * It stores combined request (context) + policy and the rules interpreting those two.
+ * It stores combined request (context) + policies and the rules interpreting those two.
  * Print out the file name
  * Print out instructions for eye to reason over it (assuming eye is locally installed)
  */
@@ -205,11 +207,11 @@ export function storeToReason(combined: string): void {
 
 /**
  * Util function to debug why a certain test went wrong
- * @param policy 
+ * @param policies 
  * @param request 
  * @param n3Rules 
  */
-export function debug(policy: SimplePolicy, request: UconRequest, n3Rules: string): void {
-    const combined = combine(policy, request, n3Rules)
+export function debug(policies: SimplePolicy[], request: UconRequest, n3Rules: string): void {
+    const combined = combine(policies, request, n3Rules)
     storeToReason(combined)
 }

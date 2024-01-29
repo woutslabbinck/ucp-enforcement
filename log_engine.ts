@@ -1,6 +1,6 @@
 import { EyeJsReasoner, readText } from "koreografeye";
 import { PolicyExecutor } from "./src/PolicyExecutor";
-import { UconEnforcementDecision, UconRequest, UcpPatternEnforcement, createContext } from "./src/UcpPatternEnforcement";
+import { Explanation, UconEnforcementDecision, UconRequest, UcpPatternEnforcement, createContext } from "./src/UcpPatternEnforcement";
 import { UcpPlugin } from "./src/plugins/UCPPlugin";
 import { ContainerUCRulesStore as ContainerUCRulesStorage } from "./src/storage/ContainerUCRulesStorage";
 import { configSolidServer, eqList, createPolicy, purgePolicyStorage, createTemporalPolicy, debug, SimplePolicy, UCPPolicy } from "./crudUtil";
@@ -102,7 +102,7 @@ main()
  * @param input 
  * @returns 
  */
-async function validate(input:{
+async function validate(input: {
     request: UconRequest,
     policies: UCPPolicy[],
     ucpExecutor: UconEnforcementDecision,
@@ -131,24 +131,12 @@ async function validate(input:{
     const successful = eqList(explanation, requestedActions)
     if (!successful) {
         console.log("This policy is wrong.");
-        // Explanation | Note: commented out
-        // console.log("Explanation:");
-        // console.log(explanation);
-
-        // TODO: Rewrite debug. Either list of simple policies or N3 store
-        let policiesString = ""
-        for (const createdPolicy of createdPolicies) {
-            policiesString += storeToString(createdPolicy.representation)
-        }
-        const context = storeToString(createContext(request))
-        const fileContent = [policiesString, context, input.n3Rules.join('\n')].join('\n')
-        const fileName = Path.join('debug', `fullRequest-${new Date().valueOf()}.n3`);
-        console.log('execute with eye:', `\neye --quiet --nope --pass-only-new ${fileName}`);
-        fs.writeFileSync(fileName, fileContent)
+        debug(createdPolicies, request, input.n3Rules.join('\n'))
     }
     console.log();
     return successful
 }
+
 /**
  * Validates a request to an ucon rules set and its interepretation.
  * Will produce a proper log when the test fails.
@@ -166,7 +154,7 @@ async function validateAndExplain(input: {
     descriptionMessage?: string,
     validationMessage?: string,
     n3Rules: string[]
-}): Promise<boolean> {
+}): Promise<{ successful: boolean, explanation: Explanation }> {
     const { request, policies, ucpExecutor, storage } = input;
     // add policies
     const createdPolicies: SimplePolicy[] = [];
@@ -187,21 +175,8 @@ async function validateAndExplain(input: {
     const successful = eqList(explanation.decision, requestedActions)
     if (!successful) {
         console.log("This policy is wrong.");
-        // Explanation | Note: commented out
-        // console.log("Explanation:");
-        // console.log(explanation);
-
-        // TODO: Rewrite debug. Either list of simple policies or N3 store
-        let policiesString = ""
-        for (const createdPolicy of createdPolicies) {
-            policiesString += storeToString(createdPolicy.representation)
-        }
-        const context = storeToString(createContext(request))
-        const fileContent = [policiesString, context, input.n3Rules.join('\n')].join('\n')
-        const fileName = Path.join('debug', `fullRequest-${new Date().valueOf()}.n3`);
-        console.log('execute with eye:', `\neye --quiet --nope --pass-only-new ${fileName}`);
-        fs.writeFileSync(fileName, fileContent)
+        debug(createdPolicies, request, input.n3Rules.join('\n'))
     }
     console.log();
-    return successful
+    return { successful, explanation }
 }
