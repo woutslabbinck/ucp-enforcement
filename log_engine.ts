@@ -1,10 +1,11 @@
 import * as fs from 'fs';
 import { EyeJsReasoner, readText } from "koreografeye";
-import { UCPPolicy, configSolidServer, purgePolicyStorage, validate } from "./crudUtil";
+import { Store } from "n3";
+import { SimplePolicy, UCPPolicy, configSolidServer, purgePolicyStorage, validateAndExplain } from "./crudUtil";
 import { PolicyExecutor } from "./src/PolicyExecutor";
 import { AccessMode } from "./src/UMAinterfaces";
-import { UconRequest, UcpPatternEnforcement } from "./src/UcpPatternEnforcement";
-import { UcpPlugin } from "./src/plugins/UCPPlugin";
+import { Explanation, UconRequest, UcpPatternEnforcement } from "./src/UcpPatternEnforcement";
+import { UCPLogPlugin } from "./src/plugins/UCPLogPlugin";
 import { ContainerUCRulesStore as ContainerUCRulesStorage } from "./src/storage/ContainerUCRulesStorage";
 
 async function main() {
@@ -21,6 +22,12 @@ async function main() {
 
     const portNumber = 3123
     const containerURL = `http://localhost:${portNumber}/`
+
+    const emptyPolicy: SimplePolicy = {
+        representation: new Store(),
+        agreementIRI: "",
+        ruleIRI: ""
+    }
 
     // start server
     // configured as following command: $ npx @solid/community-server -p 3123 -c config/memory.json     
@@ -41,20 +48,19 @@ async function main() {
     createDirIfNotExists('debug');
 
     // load plugin
-    const plugins = { "http://example.org/dataUsage": new UcpPlugin() }
+    const plugins = { "http://example.org/dataUsageLog": new UCPLogPlugin() }
     // instantiate koreografeye policy executor
     const policyExecutor = new PolicyExecutor(plugins)
     // ucon storage
     const uconRulesStorage = new ContainerUCRulesStorage(uconRulesContainer)
     // load N3 Rules from a directory | TODO: utils are needed
-    const n3Rules: string[] = [readText('./rules/data-crud-rules.n3')!]
+    const n3Rules: string[] = [readText('./rules/log-usage-rule.n3')!]
     // instantiate the enforcer using the policy executor,
     const ucpPatternEnforcement = new UcpPatternEnforcement(uconRulesStorage, n3Rules, new EyeJsReasoner([
         "--quiet",
         "--nope",
         "--pass"]), policyExecutor)
 
-    let amountErrors = 0;
 
     // requests
     const readPolicyRequest: UconRequest = {
@@ -100,10 +106,11 @@ async function main() {
     }
     const usePolicy: UCPPolicy = { action: odrlUse, owner, resource, requestingParty }
 
-    let result: boolean
+    let result: { successful: boolean, explanation: Explanation }
+    let results: { successful: boolean, explanation: Explanation }[] = []
 
     // ask read access without policy present | should fail
-    result = await validate({
+    result = await validateAndExplain({
         request: readPolicyRequest,
         policies: [],
         ucpExecutor: ucpPatternEnforcement,
@@ -112,11 +119,11 @@ async function main() {
         expectedAccessModes: [],
         descriptionMessage: "'read' access request while no policy present.",
     })
-    if (!result) amountErrors++;
+    results.push(result)
 
     // ask write access without policy present | should fail
 
-    result = await validate({
+    result = await validateAndExplain({
         request: writePolicyRequest,
         policies: [],
         ucpExecutor: ucpPatternEnforcement,
@@ -125,10 +132,10 @@ async function main() {
         expectedAccessModes: [],
         descriptionMessage: "'write' access request while no policy present.",
     })
-    if (!result) amountErrors++;
+    results.push(result)
 
     // ask read access while write policy present
-    result = await validate({
+    result = await validateAndExplain({
         request: readPolicyRequest,
         policies: [writePolicy],
         ucpExecutor: ucpPatternEnforcement,
@@ -137,12 +144,12 @@ async function main() {
         expectedAccessModes: [],
         descriptionMessage: "'read' access request while 'write' policy present.",
     })
-    if (!result) amountErrors++;
+    results.push(result)
     await purgePolicyStorage(uconRulesContainer);
 
 
     // ask write access while read policy present
-    result = await validate({
+    result = await validateAndExplain({
         request: writePolicyRequest,
         policies: [readPolicy],
         ucpExecutor: ucpPatternEnforcement,
@@ -151,11 +158,11 @@ async function main() {
         expectedAccessModes: [],
         descriptionMessage: "'write' access request while 'read' policy present.",
     })
-    if (!result) amountErrors++;
+    results.push(result)
     await purgePolicyStorage(uconRulesContainer);
 
     // ask read access while temporal policy present (and no others) | out of bound
-    result = await validate({
+    result = await validateAndExplain({
         request: readPolicyRequest,
         policies: [temporalReadPolicyOutOfBound],
         ucpExecutor: ucpPatternEnforcement,
@@ -164,11 +171,11 @@ async function main() {
         expectedAccessModes: [],
         descriptionMessage: "'read' access request while temporal 'read' policy present. Out of bound, so no access",
     })
-    if (!result) amountErrors++;
+    results.push(result)
     await purgePolicyStorage(uconRulesContainer);
 
     // ask read access while temporal policy present (and no others) | within bound 
-    result = await validate({
+    result = await validateAndExplain({
         request: readPolicyRequest,
         policies: [temporalReadPolicyWithinBound],
         ucpExecutor: ucpPatternEnforcement,
@@ -177,11 +184,11 @@ async function main() {
         expectedAccessModes: [],
         descriptionMessage: "'read' access request while temporal 'read' policy present. Within bound. However, no N3 rule for interpretation.",
     })
-    if (!result) amountErrors++;
+    results.push(result)
     await purgePolicyStorage(uconRulesContainer);
 
     // ask write access while temporal policy present (and no others) | out of bound
-    result = await validate({
+    result = await validateAndExplain({
         request: writePolicyRequest,
         policies: [temporalWritePolicyOutOfBound],
         ucpExecutor: ucpPatternEnforcement,
@@ -190,11 +197,11 @@ async function main() {
         expectedAccessModes: [],
         descriptionMessage: "'write' access request while temporal 'write' policy present. Out of bound, so no access",
     })
-    if (!result) amountErrors++;
+    results.push(result)
     await purgePolicyStorage(uconRulesContainer);
 
     // ask write access while temporal policy present (and no others) | within bound 
-    result = await validate({
+    result = await validateAndExplain({
         request: writePolicyRequest,
         policies: [temporalWritePolicyWithinBound],
         ucpExecutor: ucpPatternEnforcement,
@@ -203,11 +210,11 @@ async function main() {
         expectedAccessModes: [],
         descriptionMessage: "'write' access request while temporal 'write' policy present. Within bound. However, no N3 rule for interpretation.",
     })
-    if (!result) amountErrors++;
+    results.push(result)
     await purgePolicyStorage(uconRulesContainer);
 
     // ask read access while read policy present
-    result = await validate({
+    result = await validateAndExplain({
         request: readPolicyRequest,
         policies: [readPolicy],
         ucpExecutor: ucpPatternEnforcement,
@@ -216,11 +223,11 @@ async function main() {
         expectedAccessModes: [AccessMode.read],
         descriptionMessage: "'read' access request while 'read' policy present.",
     })
-    if (!result) amountErrors++;
+    results.push(result)
     await purgePolicyStorage(uconRulesContainer);
 
     // ask write access while write policy present
-    result = await validate({
+    result = await validateAndExplain({
         request: writePolicyRequest,
         policies: [writePolicy],
         ucpExecutor: ucpPatternEnforcement,
@@ -229,26 +236,31 @@ async function main() {
         expectedAccessModes: [AccessMode.write],
         descriptionMessage: "'write' access request while 'write' policy present.",
     })
-    if (!result) amountErrors++;
+    results.push(result)
     await purgePolicyStorage(uconRulesContainer);
 
     // ask read and write access while use policy present
-    result = await validate({
+    result = await validateAndExplain({
         request: usePolicyRequest,
         policies: [usePolicy],
         ucpExecutor: ucpPatternEnforcement,
         storage: uconRulesStorage,
         n3Rules: n3Rules,
-        expectedAccessModes: [AccessMode.write, AccessMode.read],
+        expectedAccessModes: [AccessMode.write],
         descriptionMessage: "'read' and 'write' access request while 'use' policy present.",
     })
-    if (!result) amountErrors++;
+    results.push(result)
     await purgePolicyStorage(uconRulesContainer);
     // stop server
     await server.stop()
 
-    if (amountErrors) console.log("Amount of errors:", amountErrors); // only log amount of errors if there are any
-
+    let amountErrors = results.filter(result => !result.successful).length
+    if (amountErrors) {
+        console.log("Amount of errors:", amountErrors); // only log amount of errors if there are any
+        for (const result of results.filter(result => !result.successful)) {
+            console.log(result.explanation);
+        }
+    }
 }
 main()
 
