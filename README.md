@@ -82,7 +82,7 @@ const ucpPatternEnforcement = new UcpPatternEnforcement(uconRulesStorage, n3Rule
 
 
 
-The code in `crud_engine.ts` evaluates 12[ `UconRequest`](./src/UcpPatternEnforcement.ts)s using an instance of [`UconEnforcementDecision`](./src/UcpPatternEnforcement.ts) against a variety of ucon rule sets to verify the engine is working as intended.
+The code in `crud_engine.ts` evaluates 12[ `UconRequest`](./src/request.ts)s using an instance of [`UconEnforcementDecision`](./src/UcpPatternEnforcement.ts) against a variety of ucon rule sets to verify the engine is working as intended.
 
 When an evaluation fails, e.g. through changing the code, an N3 file will be created in the `debug` directory.
 This file will include the request (transformed to RDF and serialized to n-triples), the ucon rule(s) and the N3 interpretation rules.
@@ -158,4 +158,21 @@ An **Explanation** consists of four components:
     For all conclusions in **Conclusions**, if a grant is in conclusion, then it is part of the list of grants in **Decision**.
 
 Having the **Explanation** after an evaluation thus allows for logging with provenance/proof of why a certain action was granted at a certain time.
+
+Some utility functions are added such that an explanation can be serialized to RDF:
+
+- `explanationToRdf`: transforms the Javascript object Explanation to an [N3 Store](https://github.com/rdfjs/N3.js?tab=readme-ov-file#storing) containing the explanation information
+- `serializeFullExplanation`: Serializes the explanation (which contains the request), ucon policies and N3 interpretation to [Notation3](https://w3c.github.io/N3/spec/).
+
+```ts
+import { Store } from "n3";
+
+// use of explanationToRdf
+const explanationStore: Store = explanationToRdf(explanation);
+
+// use of serializeFullExplanation
+const uconRules = await uconRulesStorage.getStore();
+const serialized: string = serializeFullExplanation(explanation, uconRules, n3Rules.join('\n'));
+
+```
 
