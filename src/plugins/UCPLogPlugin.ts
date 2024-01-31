@@ -4,7 +4,7 @@ import { AccessMode } from "../UMAinterfaces";
 import { accesModesAllowed } from "../util/constants";
 import { Conclusion } from "../Explanation";
 
-export const ucpPluginIdentifier = 'http://example.org/dataUsageLog'
+export const ucpLogPluginIdentifier = 'http://example.org/dataUsageLog'
 
 export class UCPLogPlugin extends PolicyPlugin {
 

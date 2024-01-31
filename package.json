@@ -1,4 +1,22 @@
 {
+  "name": "ucp-enforcement",
+  "version": "0.1.0",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "keywords": [
+    "solid",
+    "linked-data",
+    "rdf"
+  ],
+  "files": [
+    "config",
+    "dist"
+  ],
+  "scripts": {
+    "build": "rm -r ./dist && npm run build:ts",
+    "build:ts": "tsc",
+    "prepare": "npm run build:ts"
+  },
   "dependencies": {
     "@types/n3": "^1.16.3",
     "koreografeye": "^0.4.7",
@@ -6,6 +24,7 @@
   },
   "devDependencies": {
     "ts-node": "^10.9.1",
-    "@solid/community-server": "7.0.3"
+    "@solid/community-server": "7.0.3",
+    "typescript":"^5.3.3"
   }
 }

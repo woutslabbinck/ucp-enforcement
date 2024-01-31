@@ -1,7 +1,7 @@
 # (Preventive) Usage Control Decision/Enforcement playground
 
 A playground environment to calculate Access Modes based on ODRL Rules, an [UMA Client Request](https://docs.kantarainitiative.org/uma/wg/rec-oauth-uma-grant-2.0.html#rfc.section.3.3.1) and Koreografeye (with accompanying N3 Rules and plugin(s)).
-This class will be used in the [UMA Authorisation Server](https://github.com/woutslabbinck/uma/packages/uma) that is being developed to work with the [Community Solid Server](https://github.com/CommunitySolidServer/CommunitySolidServer).
+This class will be used in the [UMA Authorisation Server](https://github.com/woutslabbinck/UMA/tree/main/packages/uma) that is being developed to work with the [Community Solid Server](https://github.com/CommunitySolidServer/CommunitySolidServer).
 
 The UMA client request contains the following information
 * Resource Owner

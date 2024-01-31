@@ -1,19 +1,17 @@
 import { App, AppRunner, AppRunnerInput } from "@solid/community-server";
 import * as fs from 'fs';
-import { Store } from "n3";
 import * as Path from 'path';
-import * as path from 'path';
-import { Explanation, serializeFullExplanation, serializePremises } from "./src/Explanation";
+import { Explanation, serializePremises } from "./src/Explanation";
 import { UconRequest } from "./src/Request";
 import { AccessMode } from "./src/UMAinterfaces";
 import { UconEnforcementDecision } from "./src/UcpPatternEnforcement";
-import { readLdpRDFResource } from "./src/storage/ContainerUCRulesStorage";
 import { UCRulesStorage } from "./src/storage/UCRulesStorage";
 import { turtleStringToStore } from "./src/util/Conversion";
+import { readLdpRDFResource, SimplePolicy } from "./src/util/Util";
 
 export async function configSolidServer(port: number): Promise<App> {
     const input: AppRunnerInput = {
-        config: path.join(__dirname, "config", "memory.json"),
+        config: Path.join(__dirname, "config", "memory.json"),
         variableBindings: {
             'urn:solid-server:default:variable:port': port,
             'urn:solid-server:default:variable:baseUrl': `http://localhost:${port}/`,
@@ -24,15 +22,6 @@ export async function configSolidServer(port: number): Promise<App> {
     return cssRunner
 }
 
-// instantiated policy consisting of one agreement and one rule
-export interface SimplePolicy {
-    // representation of the ucon rule + agreement
-    representation: Store,
-    // identifier of the agreement
-    agreementIRI: string,
-    // identifier of the rule
-    ruleIRI: string
-}
 /**
  * Create a simple policy with an agreement and one rule
  * Note: should and can be made synchronous
@@ -128,33 +117,6 @@ export async function purgePolicyStorage(containerURL: string): Promise<void> {
 // util function that checks whether lists contain the same elements
 export function eqList(as: any[], bs: any[]): boolean {
     return as.length === bs.length && as.every(a => bs.includes(a))
-}
-
-/**
- * A recursive search algorithm that gives all quads that a subject can reach (working with circles)
- * 
- * @param store 
- * @param subjectIRI 
- * @param existing IRIs that already have done the recursive search (IRIs in there must not be searched for again)
- * @returns 
- */
-export function extractQuadsRecursive(store: Store, subjectIRI: string, existing?: string[]): Store {
-    const tempStore = new Store();
-    const subjectIRIQuads = store.getQuads(subjectIRI, null, null, null)
-
-    tempStore.addQuads(subjectIRIQuads)
-    const existingSubjects = existing ?? [subjectIRI]
-
-    for (const subjectIRIQuad of subjectIRIQuads) {
-        if (!existingSubjects.includes(subjectIRIQuad.object.id)) {
-            tempStore.addQuads(extractQuadsRecursive(store, subjectIRIQuad.object.id, existingSubjects).getQuads(null, null, null, null))
-        }
-        else {
-            tempStore.addQuad(subjectIRIQuad)
-        }
-        existingSubjects.push(subjectIRIQuad.object.id)
-    }
-    return tempStore
 }
 
 /**

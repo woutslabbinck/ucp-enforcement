@@ -3,7 +3,7 @@ import { AccessMode } from "./UMAinterfaces"
 import { UconRequest, createContext } from "./Request"
 import { v4 as uuidv4 } from 'uuid';
 import { accesModesAllowed } from "./util/constants";
-import { SimplePolicy } from "../crudUtil";
+import { SimplePolicy } from "./util/Util";
 import { storeToString } from "./util/Conversion";
 const { namedNode, literal } = DataFactory
 

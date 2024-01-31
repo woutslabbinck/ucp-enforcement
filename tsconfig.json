@@ -1,0 +1,20 @@
+{
+    "compilerOptions": {
+      "declaration": true,
+      "target": "es5",
+      "module": "commonjs",
+      "allowJs": true,
+      "outDir": "./dist",
+      "noEmitOnError": false, // TODO: enable again if type error from koreografeye and comnmunitySolidServer is solved
+      "esModuleInterop": false,
+      "forceConsistentCasingInFileNames": true,
+      "strict": true,
+      "skipLibCheck": true
+    },
+    "include": [
+      "src"
+    ],
+    "exclude": [
+      "node_modules"
+    ]
+  }
