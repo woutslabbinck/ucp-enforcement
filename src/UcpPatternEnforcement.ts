@@ -1,9 +1,11 @@
-import { Store, DataFactory } from "n3";
-import { Reasoner, rdfTransformStore, rdfTransformString } from "koreografeye"
+import { Reasoner } from "koreografeye";
+import { Store } from "n3";
+import { Conclusion, DecisionAlgorithm, Explanation } from "./Explanation";
 import { PolicyExecutor as IPolicyExecutor } from "./PolicyExecutor";
-import { Principal, Ticket, AccessMode } from "./UMAinterfaces";
+import { UconRequest } from "./Request";
+import { AccessMode } from "./UMAinterfaces";
 import { UCRulesStorage } from "./storage/UCRulesStorage";
-const { quad, namedNode } = DataFactory
+import { createContext } from "./Request";
 
 /**
  * Can calculate Access Modes based on an UMA request, ODRL Rules and N3 Rules using the Koreografeye flow.
@@ -102,36 +104,13 @@ export class UcpPatternEnforcement implements UconEnforcementDecision {
         return {
             decision: decision,
             request: {
-                raw: request,
-                rdf: contextStore
+                raw: request
             },
             algorithm: DecisionAlgorithm.Union,
             conclusions: conclusions,
         }
     }
 }
-
-/**
- * Creates an N3 Store based on the context of an UMA Access Request.
- * Currently, the access request also contain ACL access modes.
- * @param context 
- */
-export function createContext(request: UconRequest): Store {
-    const contextStore = new Store()
-    const { owner, subject: requestingParty, action: requestedAccessModes, resource } = request
-    const contextIRI = 'http://example.org/context'
-    contextStore.addQuads([
-        quad(namedNode(contextIRI), namedNode('http://example.org/resourceOwner'), namedNode(owner!)), // will probably fail if owner is not passed
-        quad(namedNode(contextIRI), namedNode('http://example.org/requestingParty'), namedNode(requestingParty)),
-        quad(namedNode(contextIRI), namedNode('http://example.org/target'), namedNode(resource))
-    ])
-
-    for (const accessMode of requestedAccessModes) {
-        contextStore.addQuad(namedNode(contextIRI), namedNode('http://example.org/requestPermission'), namedNode(accessMode))
-    }
-    return contextStore
-}
-
 
 export interface UconEnforcementDecision {
     /**
@@ -150,90 +129,4 @@ export interface UconEnforcementDecision {
      * @returns The explanation (which includes the Access Modes)
      */
     calculateAndExplainAccessModes: (request: UconRequest) => Promise<Explanation>;
-}
-
-export interface Explanation {
-    /**
-     * The access modes allowed.
-     */
-    decision: AccessMode[],
-    /**
-     * The input request used as premise.
-     */
-    request: {
-        raw: UconRequest,
-        /**
-         * not sure whether this is useful | {@link createContext} can be used 
-         */
-        rdf: Store
-    },
-    /**
-     * The algorithm used to calculate the decision based on the conclusions.
-     */
-    algorithm: DecisionAlgorithm,
-    /**
-     * The conclusions of the reasoner.
-     * Knowledge base: the input request + all the usage control rules.
-     * Reasoning rules: N3 rules.
-     */
-    conclusions: Conclusion[]
-}
-
-/**
- * Different kinds of decision algorithms which can be used to calculate the grant decisions for the {@link Explanation}
- */
-export enum DecisionAlgorithm {
-    /**
-     * The decision will be based on the **union** of all the grants of the {@link Conclusion | conclusions}.
-     */
-    Union="Union",
-    /**
-     * The decision will be based on the **intersection** of all the grants of the {@link Conclusion | conclusions}.
-     */
-    Intersection = "Intersection",
-    /**
-     * The decision will be based on binary operators of the **policies** to which the {@link Conclusion | conclusions} belong.
-     * If the policies don't explicitly state on how to interpret the multiple rules, **intersection** on the grants of the rules (r1 AND r2 ... ri) will be used.
-     */
-    Policy = "Policy"
-}
-
-/**
- * A rule that was actived through the reasoning together with it its conclusion (which is parsed).
- */
-export interface Conclusion {
-    /**
-     * The identifier of the usage control rule.
-     */
-    ruleIRI: string,
-    /**
-     * The identifier of an N3 rule.
-     * In particular the rule that was active on both the rule and the request.
-     */
-    interpretationIRI: string,
-    /**
-     * The resulting grants allowed throught the reasoning.
-     * (part of the conclusion of the rule)
-     */
-    grants: AccessMode[],
-    /**
-     * The time at which the reasoning happened.
-     * (part of the conclusion of the rule)
-     */
-    timestamp: Date
-}
-/**
- * 
- * @property {string} subject - The identifier of the entity that wants to execute an action on a resource (e.g. a {@link https://solid.github.io/webid-profile/ WebID})
- * @property {string} action - The type of action(s) that the entity wants to perform on the resource (e.g. a CRUD action)
- * @property {string} resource - The resource identifier that is governed by a usage control policy 
- * @property {string} context - Extra information supplied (can be the purpose of use, extra claims, ...) | Note: currently not implemented yet
- * @property {string} owner - The owner/providerof the resource (e.g. a {@link https://solid.github.io/webid-profile/ WebID})
- */
-export interface UconRequest {
-    subject: string;
-    action: string[];
-    resource: string;
-    context?: string;
-    owner?: string
 }

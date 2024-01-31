@@ -3,11 +3,13 @@ import * as fs from 'fs';
 import { Store } from "n3";
 import * as Path from 'path';
 import * as path from 'path';
+import { Explanation, serializeFullExplanation, serializePremises } from "./src/Explanation";
+import { UconRequest } from "./src/Request";
 import { AccessMode } from "./src/UMAinterfaces";
-import { Explanation, UconEnforcementDecision, UconRequest, createContext } from "./src/UcpPatternEnforcement";
+import { UconEnforcementDecision } from "./src/UcpPatternEnforcement";
 import { readLdpRDFResource } from "./src/storage/ContainerUCRulesStorage";
 import { UCRulesStorage } from "./src/storage/UCRulesStorage";
-import { storeToString, turtleStringToStore } from "./src/util/Conversion";
+import { turtleStringToStore } from "./src/util/Conversion";
 
 export async function configSolidServer(port: number): Promise<App> {
     const input: AppRunnerInput = {
@@ -156,24 +158,6 @@ export function extractQuadsRecursive(store: Store, subjectIRI: string, existing
 }
 
 /**
- * Combine the policies with the request and the N3 rules interpreting the request into a single string
- * @param policies 
- * @param request 
- * @param rules 
- */
-export function combine(policies: SimplePolicy[], request: UconRequest, n3Rules: string): string {
-    // get string representation of the policies
-    let policiesString = ""
-    for (const createdPolicy of policies) {
-        policiesString += storeToString(createdPolicy.representation)
-    }    // create context request
-    const context = storeToString(createContext(request))
-    // create file with N3 rules, context and policy
-    const fileContent = [policiesString, context, n3Rules].join('\n')
-    return fileContent
-}
-
-/**
  * Really needs a better name.
  * It stores combined request (context) + policies and the rules interpreting those two.
  * Print out the file name
@@ -193,7 +177,7 @@ export function storeToReason(combined: string): void {
  * @param n3Rules 
  */
 export function debug(policies: SimplePolicy[], request: UconRequest, n3Rules: string): void {
-    const combined = combine(policies, request, n3Rules)
+    const combined = serializePremises(policies, request, n3Rules)
     storeToReason(combined)
 }
 

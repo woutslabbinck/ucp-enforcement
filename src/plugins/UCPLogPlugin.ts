@@ -1,8 +1,8 @@
 import { Store } from "n3";
 import { IPolicyType, PolicyPlugin } from "../PolicyExecutor";
 import { AccessMode } from "../UMAinterfaces";
-import { Conclusion } from "../UcpPatternEnforcement";
 import { accesModesAllowed } from "../util/constants";
+import { Conclusion } from "../Explanation";
 
 export const ucpPluginIdentifier = 'http://example.org/dataUsageLog'
 

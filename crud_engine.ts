@@ -3,9 +3,10 @@ import { EyeJsReasoner, readText } from "koreografeye";
 import { UCPPolicy, configSolidServer, purgePolicyStorage, validate } from "./crudUtil";
 import { PolicyExecutor } from "./src/PolicyExecutor";
 import { AccessMode } from "./src/UMAinterfaces";
-import { UconRequest, UcpPatternEnforcement } from "./src/UcpPatternEnforcement";
+import {  UcpPatternEnforcement } from "./src/UcpPatternEnforcement";
 import { UcpPlugin } from "./src/plugins/UCPPlugin";
 import { ContainerUCRulesStorage } from "./src/storage/ContainerUCRulesStorage";
+import { UconRequest } from './src/Request';
 
 async function main() {
     // constants

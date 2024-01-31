@@ -1,11 +1,14 @@
 import * as fs from 'fs';
 import { EyeJsReasoner, readText } from "koreografeye";
 import { UCPPolicy, configSolidServer, purgePolicyStorage, validateAndExplain } from "./crudUtil";
+import { Explanation, explanationToRdf } from './src/Explanation';
 import { PolicyExecutor } from "./src/PolicyExecutor";
+import { UconRequest } from './src/Request';
 import { AccessMode } from "./src/UMAinterfaces";
-import { Explanation, UconRequest, UcpPatternEnforcement } from "./src/UcpPatternEnforcement";
+import { UcpPatternEnforcement } from "./src/UcpPatternEnforcement";
 import { UCPLogPlugin } from "./src/plugins/UCPLogPlugin";
 import { ContainerUCRulesStorage } from "./src/storage/ContainerUCRulesStorage";
+import { storeToString } from './src/util/Conversion';
 
 async function main() {
     // constants
@@ -239,21 +242,21 @@ async function main() {
         ucpExecutor: ucpPatternEnforcement,
         storage: uconRulesStorage,
         n3Rules: n3Rules,
-        expectedAccessModes: [AccessMode.write],
+        expectedAccessModes: [AccessMode.write, AccessMode.read],
         descriptionMessage: "'read' and 'write' access request while 'use' policy present.",
     })
     results.push(result)
     await purgePolicyStorage(uconRulesContainer);
-    // stop server
-    await server.stop()
 
     let amountErrors = results.filter(result => !result.successful).length
     if (amountErrors) {
         console.log("Amount of errors:", amountErrors); // only log amount of errors if there are any
         for (const result of results.filter(result => !result.successful)) {
-            console.log(result.explanation);
+            console.log(storeToString(explanationToRdf(result.explanation)));
         }
     }
+    // stop server
+    await server.stop()
 }
 main()
 

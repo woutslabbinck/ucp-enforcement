@@ -2,12 +2,13 @@ import { EyeJsReasoner, readText } from "koreografeye";
 import * as path from 'path';
 import { PolicyExecutor } from "./src/PolicyExecutor";
 import { AccessMode } from "./src/UMAinterfaces";
-import { UconRequest, UcpPatternEnforcement } from "./src/UcpPatternEnforcement";
+import { UcpPatternEnforcement } from "./src/UcpPatternEnforcement";
 import { UcpPlugin } from "./src/plugins/UCPPlugin";
 import { DirectoryUCRulesStorage } from "./src/storage/DirectoryUCRulesStorage";
 import { storeToString } from "./src/util/Conversion";
 import { configSolidServer } from "./crudUtil";
 import { ContainerUCRulesStorage } from "./src/storage/ContainerUCRulesStorage";
+import { UconRequest } from "./src/Request";
 
 async function main() {
     // load plugin
