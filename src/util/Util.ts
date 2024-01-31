@@ -1,5 +1,4 @@
 import { RequestInfo } from "../storage/ContainerUCRulesStorage";
-
 import { Store } from "n3";
 import { turtleStringToStore } from "./Conversion";
 
