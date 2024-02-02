@@ -11,15 +11,13 @@ The UMA client request contains the following information
 
 In [`main.ts`](./main.ts) is an example of how it works given.
 
-## run
+Running that script is done as follows:
 
 ```sh
 npx ts-node main.ts
 ```
 
-## Info
-
-Data usage (policy 1) plugin: `http://example.org/dataUsage`
+More information on how this library works can be found in the [**tutorial**](./docs/getting-started.md).
 
 ## How does it work
 <!-- TODO: make architecture drawing of the components -->
