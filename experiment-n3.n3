@@ -16,6 +16,16 @@
 # { policy type + all rules active } -> { intersect of all rules ? Union of coclusion? Idk Do they all rules have to be active? I think only when S A R C remains the same }
 # Is the resource and the subject and context a cpnstraimt itself? ABAC
 
+# Open questions:
+# - In previous rules, I had (request action + multiple options policy action) -> (request action)
+#   now I have (multiple options request action + policy action) -> (all options allowed according policy action)
+#   Q: Which one is better? (needs to be answered by someone with technical and odrl know how)
+# - How to deal with obligations and prohibitions?
+#   Tracker github issue: https://github.com/SolidLabResearch/user-managed-access/issues/10
+# - How to handle owner?, should it be a constraint?
+#   Tracker github issue: https://github.com/SolidLabResearch/user-managed-access/issues/25
+
+
 # request (state of world extracted)
 <http://example.org/context>
   :resourceOwner <https://pod.woutslabbinck.com/profile/card#me> ;
