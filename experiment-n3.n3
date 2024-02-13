@@ -1,0 +1,264 @@
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix : <http://example.org/> .
+@prefix acl: <http://www.w3.org/ns/auth/acl#>.
+@prefix fno:  <https://w3id.org/function/ontology#> .
+@prefix list: <http://www.w3.org/2000/10/swap/list#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix odrl: <http://www.w3.org/ns/odrl/2/> .
+@prefix string: <http://www.w3.org/2000/10/swap/string#> .
+@prefix time: <http://www.w3.org/2000/10/swap/time#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+# Idea:
+# Can I do the reasoning first of all constraints?
+# { constaint is true} -> { constaint active }
+# { rule + all constraints active (built in} -> { rule active  + which permission}
+# { policy type + all rules active } -> { intersect of all rules ? Union of coclusion? Idk Do they all rules have to be active? I think only when S A R C remains the same }
+# Is the resource and the subject and context a cpnstraimt itself? ABAC
+
+# request (state of world extracted)
+<http://example.org/context>
+  :resourceOwner <https://pod.woutslabbinck.com/profile/card#me> ;
+  :requestingParty <https://woslabbi.pod.knows.idlab.ugent.be/profile/card#me> ;
+  :target <http://localhost:3000/test.ttl> ;
+  :requestPermission <http://www.w3.org/ns/auth/acl#Write>, <http://www.w3.org/ns/auth/acl#Read> .
+
+# time
+:currentTime dct:issued "2024-02-12T11:20:10.999Z"^^xsd:dateTime .
+
+# time-based read policy
+<urn:ucp:policy:2c089e09-18d4-4900-94ed-442c642b5af7>
+  a odrl:Agreement ;
+  odrl:permission <urn:ucp:rule:61659afb-f654-410a-a213-05b4fd701a17> .
+
+<urn:ucp:rule:61659afb-f654-410a-a213-05b4fd701a17>
+  a odrl:Permission ;
+  odrl:action odrl:read ;
+  odrl:target <http://localhost:3000/test.ttl> ;
+  odrl:assignee <https://woslabbi.pod.knows.idlab.ugent.be/profile/card#me> ;
+  odrl:assigner <https://pod.woutslabbinck.com/profile/card#me> ;
+  odrl:constraint <urn:ucp:constraint:0b004944-465b-43c5-8f97-7d541fcb4af3>, <urn:ucp:constraint:b405a39b-9ed6-4be7-b70b-ce4cc087693d> .
+
+<urn:ucp:constraint:0b004944-465b-43c5-8f97-7d541fcb4af3>
+  odrl:leftOperand odrl:dateTime ;
+  odrl:operator odrl:gt ;
+  odrl:rightOperand "2024-01-01T00:00:00.000Z"^^xsd:dateTime .
+
+<urn:ucp:constraint:b405a39b-9ed6-4be7-b70b-ce4cc087693d>
+  odrl:leftOperand odrl:dateTime ;
+  odrl:operator odrl:lt ;
+  odrl:rightOperand "2024-01-02T00:00:00.000Z"^^xsd:dateTime .
+
+# use policy
+<http://example.org/1707305905441#usagePolicy>
+  a odrl:Agreement ;
+  odrl:permission <http://example.org/1707305905441#permission> .
+
+<http://example.org/1707305905441#permission>
+  a odrl:Permission ;
+  odrl:action odrl:use ;
+  odrl:target <http://localhost:3000/test.ttl> ;
+  odrl:assignee <https://woslabbi.pod.knows.idlab.ugent.be/profile/card#me> ;
+  odrl:assigner <https://pod.woutslabbinck.com/profile/card#me> .
+
+# odrl dateTime upper bound active
+{ 
+    ?constraint odrl:leftOperand odrl:dateTime ;
+        odrl:operator odrl:lt ;
+        odrl:rightOperand ?upperBound .
+
+    :currentTime dct:issued ?currentTime .
+
+    # only true if current time < rule time (upperbound)
+    ?currentTime math:lessThan ?upperBound . 
+} => 
+{
+    ?constraint :active "true"^^xsd:boolean .
+} .
+
+
+# odrl dateTime lower bound active
+{ 
+    ?constraint odrl:leftOperand odrl:dateTime ;
+        odrl:operator odrl:gt ;
+        odrl:rightOperand ?lowerBound .
+
+    :currentTime dct:issued ?currentTime .
+
+    # only true if current time > rule time (lower bound)
+	?currentTime math:greaterThan ?lowerBound . 
+} => 
+{
+    ?constraint :active "true"^^xsd:boolean .
+} .
+
+
+# rule active constraints
+# minimum one constraint | Note: is this necessary?
+# all active
+{ 
+    ?permission a odrl:Permission.
+
+    # constraints
+    # all constraints
+    (?template {?permission odrl:constraint _:s} ?L) log:collectAllIn ?SCOPE .
+	  ?L list:length ?numberConstraints .
+    # ?numberConstraints math:greaterThan 0 . # Note: is this necessary?
+
+    # active constraints
+    (?constraint {
+        ?permission odrl:constraint ?constraint . 
+        ?constraint :active "true"^^xsd:boolean 
+      } ?list)
+    log:collectAllIn ?SCOPE .
+	  ?list list:length ?activeConstraints .
+} => {
+    ?permission :numberConstraints ?numberConstraints.
+    ?permission :activeConstraints ?activeConstraints.
+}.
+
+# rule (Permission) active
+{
+  # number active rules must be equal to amount of rules the permission has (see ODRL formalism)
+  ?permission a odrl:Permission.
+  ?permission :numberConstraints ?numberConstraints.
+  ?permission :activeConstraints ?activeConstraints.
+  ?activeConstraints math:equalTo ?numberConstraints .
+
+  # Conclusion of the rule (i.e. which permission is allowed) 
+  ?urnUuid dct:issued ?currentTime.
+  ?urnUuid :UCrule ?permission.
+  ?urnUuid :accessModesAllowed ?accessMode .
+} => {
+  # rule is active AND can be processed further
+  ?permission :active true.
+  ?urnUuid a fno:Execution;
+    fno:executes <http://example.org/dataUsageLog> .
+  ?urnUuid :N3Identifier :ruleWasActive .
+} .
+
+# policy active rules
+{ 
+  ?policy a ?policyType .
+
+  ?policyType list:in (odrl:Agreement) .
+
+  # rules
+  # all rules (permissions)
+  (?template {?policy odrl:permission _:s} ?L) log:collectAllIn ?SCOPE .
+  ?L list:length ?numberRules .
+
+  # active rules (permissions)
+  (?constraint {
+      ?policy odrl:permission ?permission . 
+      ?permission :active "true"^^xsd:boolean 
+    } ?list)
+  log:collectAllIn ?SCOPE .
+  ?list list:length ?activeRules .
+} => {
+    ?policy :numberRules ?numberRules.
+    ?policy :activeRules ?activeRules.
+}.
+
+# policy active
+{
+    ?policy a ?policyType .
+
+    ?policyType list:in (odrl:Agreement) .
+
+    ?policy :numberRules ?numberRules.
+    ?policy :activeRules ?activeRules.
+    ?activeRules math:equalTo ?numberRules .
+} => {
+    ?policy :active true.
+} .
+
+# read Permission
+{ 
+  # match context (RO, RP, Resource and Action)
+  ?context 
+    :resourceOwner ?resourceOwner;
+    :requestingParty ?requestedParty;
+    :target ?targetResource;
+    :requestPermission acl:Read.
+
+  ?permission a odrl:Permission;
+    odrl:target ?targetResource ;
+    odrl:assignee ?requestedParty;
+    odrl:action odrl:read ;
+    odrl:assigner ?resourceOwner .  
+
+  # get Current Time
+  :currentTime dct:issued ?currentTime .
+
+  # UUID URI creation (Note: Why not _:uuid5 ?)
+  :uuid5 log:uuid ?uuidString.
+  ( "urn:uuid:" ?uuidString) string:concatenation ?urnUuidString.
+  ?urnUuid log:uri ?urnUuidString .
+} => {
+  ?urnUuid dct:issued ?currentTime.
+  ?urnUuid :UCrule ?permission.
+  ?urnUuid :accessModesAllowed acl:Read.
+}.
+
+# use Permission
+{ 
+  # match context (RO, RP, Resource and Action)
+  ?context 
+    :resourceOwner ?resourceOwner;
+    :requestingParty ?requestedParty;
+    :target ?targetResource;
+    :requestPermission ?requestActions .
+
+  ?requestActions list:in (acl:Read acl:Write) . # multiple options
+
+
+  ?permission a odrl:Permission;
+    odrl:target ?targetResource ;
+    odrl:assignee ?requestedParty;
+    odrl:action odrl:use ;
+    odrl:assigner ?resourceOwner .  
+
+  # get Current Time
+  :currentTime dct:issued ?currentTime .
+
+  # UUID URI creation (Note: Why not _:uuid6 ?)
+  :uuid6 log:uuid ?uuidString.
+  ( "urn:uuid:" ?uuidString) string:concatenation ?urnUuidString.
+  ?urnUuid log:uri ?urnUuidString .
+} => {
+  ?urnUuid dct:issued ?currentTime.
+  ?urnUuid :UCrule ?permission.
+  ?urnUuid :accessModesAllowed acl:Read, acl:Write. # And all others are allowed
+}.
+
+# write Permission
+{ 
+  # match context (RO, RP, Resource and Action)
+  ?context 
+    :resourceOwner ?resourceOwner;
+    :requestingParty ?requestedParty;
+    :target ?targetResource;
+    :requestPermission ?requestActions .
+
+  ?requestActions list:in (acl:Write) .
+
+
+  ?permission a odrl:Permission;
+    odrl:target ?targetResource ;
+    odrl:assignee ?requestedParty;
+    odrl:action odrl:modify ;
+    odrl:assigner ?resourceOwner .  
+
+  # get Current Time
+  :currentTime dct:issued ?currentTime .
+
+  # UUID URI creation (Note: Why not _:uuid6 ?)
+  :uuid7 log:uuid ?uuidString.
+  ( "urn:uuid:" ?uuidString) string:concatenation ?urnUuidString.
+  ?urnUuid log:uri ?urnUuidString .
+} => {
+  ?urnUuid dct:issued ?currentTime.
+  ?urnUuid :UCrule ?permission.
+  ?urnUuid :accessModesAllowed acl:Write. 
+}.
